@@ -54,5 +54,5 @@ The .NET runtime additionally ships with its own third-party notices; see
 - The DWM-thumbnail window-mirroring approach was inspired by
   [OnTopReplica](https://github.com/LorenzCK/OnTopReplica). Sumbo is an
   independent, from-scratch implementation and does not include or derive
-  from OnTopReplica source code; no license notice is therefore required,
-  and this entry is an acknowledgement only.
+  from OnTopReplica source code; this entry is an acknowledgement, not a
+  license notice.

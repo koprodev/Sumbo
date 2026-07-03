@@ -16,12 +16,12 @@
 
 ![게임 위에 영상을 고정한 Sumbo](docs/screenshots/hero-gaming.jpg)
 
-![표시 패널을 연 채 창을 미러링하는 Sumbo](docs/screenshots/hero-display.png)
+![표시 패널을 연 채 창을 미러링하는 Sumbo](docs/screenshots/hero-display.jpg)
 
 |  |  |
 | --- | --- |
-| ![대상 창 선택](docs/screenshots/targets.png) | ![미러 영역 크롭](docs/screenshots/region.png) |
-| ![프로필 저장·적용](docs/screenshots/profiles.png) | ![언어·시작 설정](docs/screenshots/settings.png) |
+| ![대상 창 선택](docs/screenshots/targets.jpg) | ![미러 영역 크롭](docs/screenshots/region.jpg) |
+| ![프로필 저장·적용](docs/screenshots/profiles.jpg) | ![언어·시작 설정](docs/screenshots/settings.jpg) |
 
 ## 주요 기능
 

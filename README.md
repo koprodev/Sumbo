@@ -18,12 +18,12 @@ to the mirrored app).
 
 ![Sumbo showing a video pinned over a game](docs/screenshots/hero-gaming.jpg)
 
-![Sumbo mirroring a window with the display panel open](docs/screenshots/hero-display.png)
+![Sumbo mirroring a window with the display panel open](docs/screenshots/hero-display.jpg)
 
 |  |  |
 | --- | --- |
-| ![Pick a target window](docs/screenshots/targets.png) | ![Crop a region of the mirror](docs/screenshots/region.png) |
-| ![Save and apply profiles](docs/screenshots/profiles.png) | ![Language and startup settings](docs/screenshots/settings.png) |
+| ![Pick a target window](docs/screenshots/targets.jpg) | ![Crop a region of the mirror](docs/screenshots/region.jpg) |
+| ![Save and apply profiles](docs/screenshots/profiles.jpg) | ![Language and startup settings](docs/screenshots/settings.jpg) |
 
 ## Features
 
