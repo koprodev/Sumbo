@@ -8,6 +8,17 @@
 
 🌐 [English README](README.md)
 
+## 스크린샷
+
+> 영어 인터페이스 · 예시 데이터로 표시.
+
+![표시 패널을 연 채 창을 미러링하는 Sumbo](docs/screenshots/hero-display.png)
+
+|  |  |
+| --- | --- |
+| ![대상 창 선택](docs/screenshots/targets.png) | ![미러 영역 크롭](docs/screenshots/region.png) |
+| ![프로필 저장·적용](docs/screenshots/profiles.png) | ![언어·시작 설정](docs/screenshots/settings.png) |
+
 ## 주요 기능
 
 - **단일 창 미러** — 메인 창 자체가 미러입니다. 우측 레일에서 대상을 고르면 중앙

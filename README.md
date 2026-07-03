@@ -10,6 +10,17 @@ to the mirrored app).
 
 🇰🇷 [한국어 안내는 README.ko.md](README.ko.md)
 
+## Screenshots
+
+> Interface shown in English with sample data.
+
+![Sumbo mirroring a window with the display panel open](docs/screenshots/hero-display.png)
+
+|  |  |
+| --- | --- |
+| ![Pick a target window](docs/screenshots/targets.png) | ![Crop a region of the mirror](docs/screenshots/region.png) |
+| ![Save and apply profiles](docs/screenshots/profiles.png) | ![Language and startup settings](docs/screenshots/settings.png) |
+
 ## Features
 
 - **Single-window mirror** — the main window *is* the mirror. Pick a target from the
