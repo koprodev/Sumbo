@@ -41,6 +41,8 @@ to the mirrored app).
 - **Profiles** — save target + region + opacity + placement, reapply in one click.
 - **Group switching** — register several windows and cycle through them (`Ctrl+Alt+G`).
 - **Overlay mode (UI hide)** — chrome disappears, only the mirrored content stays.
+  The overlay window follows the crop's shape (no letterbox), and re-entering
+  overlay restores the size and position you left it at.
 - **Tray resident** — closing (X) hides to the tray (turn it off in Settings to make
   X exit for real); exit from the tray menu. Optional start-with-Windows.
 - **UI in 18 languages**, switchable at runtime — English·한국어·日本語·简体中文·

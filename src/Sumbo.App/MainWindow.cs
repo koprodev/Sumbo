@@ -103,6 +103,7 @@ public sealed class MainWindow : Form
     private bool _uiHidden;                 // overlay mode — rail/panel/title hidden, the whole client is the mirror
     private bool _preOverlaySideOpen;       // side-panel open state at overlay entry, reproduced on restore
     private Rectangle? _preOverlayBounds;   // window bounds saved at overlay entry (auto-fit to region), restored on exit
+    private Rectangle? _lastOverlayBounds;  // overlay bounds captured at overlay exit — the next entry starts there
     private static readonly Size ChromeMinSize = new(960, 600); // floor while the rail + side panel are shown
     private static readonly Size OverlayMinSize = new(100, 60);  // overlay has no chrome — allow shrinking to a small region
     private OverlayGrip? _overlayGrip;      // separate top-level handle — stays clickable while the overlay is click-through
@@ -798,7 +799,7 @@ public sealed class MainWindow : Form
         if (!_mirror.TryGetActiveSourceSize(out _, out _))
             return;
         _preOverlayBounds = Bounds;
-        ApplyOverlayFit();
+        ApplyOverlayFit(entry: true);
     }
 
     /// <summary>Re-fit during overlay — a DPI change or a group-cycle retarget alters what the canvas must hold,
@@ -808,21 +809,56 @@ public sealed class MainWindow : Form
     {
         if (_preOverlayBounds is null || _locked || WindowState != FormWindowState.Normal)
             return;
-        ApplyOverlayFit();
+        ApplyOverlayFit(entry: false);
     }
 
-    private void ApplyOverlayFit()
+    /// <summary>Physical-px box the overlay fit targets on entry: the overlay size remembered from the last exit,
+    /// else the thumbnail as currently displayed (entry keeps the visual scale — no jump to 1:1), else the source.</summary>
+    private (int W, int H) OverlayFitBox(int srcW, int srcH, double sx, double sy)
+    {
+        if (_lastOverlayBounds is Rectangle prev)
+            return (Math.Max(1, (int)Math.Round(prev.Width * sx)), Math.Max(1, (int)Math.Round(prev.Height * sy)));
+        (int dw, int dh) = _mirror.LastDestSize;
+        return dw > 0 && dh > 0 ? (dw, dh) : (srcW, srcH);
+    }
+
+    private void ApplyOverlayFit(bool entry)
     {
         if (!_mirror.TryGetActiveSourceSize(out int srcW, out int srcH))
             return;
 
         (double sx, double sy) = ClientScale();
+        // Entry sizes from the fit box; a mid-overlay refit (DPI / group-cycle retarget) keeps the current window
+        // size as the box so the new member's shape fits in place instead of blowing back up to 1:1.
+        (int boxW, int boxH) = entry
+            ? OverlayFitBox(srcW, srcH, sx, sy)
+            : (Math.Max(1, (int)Math.Round(ClientSize.Width * sx)), Math.Max(1, (int)Math.Round(ClientSize.Height * sy)));
+
+        // Crop aspect fitted into the box. Overlay is frameless — the client IS the thumbnail, so the DWM fit
+        // fills it edge-to-edge (no letterbox).
+        (int fl, int ft, int fr, int fb) = ThumbnailLayout.FitPreservingAspect(srcW, srcH, boxW, boxH);
+        int tw = Math.Max(1, fr - fl);
+        int th = Math.Max(1, fb - ft);
+
+        // Cap to the work area, aspect preserved.
         Rectangle wa = Screen.FromControl(this).WorkingArea;
         int maxThumbW = Math.Max(1, (int)(wa.Width * sx));
         int maxThumbH = Math.Max(1, (int)(wa.Height * sy));
-        // Source (1:1) capped to the work area, aspect preserved. Overlay is frameless — the client IS the
-        // thumbnail, so the DWM fit fills it edge-to-edge (no letterbox).
-        (int tw, int th) = WindowPlacement.ComputeSizeMode(ClientSizeMode.Source, srcW, srcH, maxThumbW, maxThumbH);
+        if (tw > maxThumbW || th > maxThumbH)
+        {
+            double down = Math.Min((double)maxThumbW / tw, (double)maxThumbH / th);
+            tw = Math.Max(1, (int)Math.Round(tw * down));
+            th = Math.Max(1, (int)Math.Round(th * down));
+        }
+
+        // Grow to the overlay minimum by SCALING both axes — a bare MinimumSize clamp would widen one axis only
+        // and letterbox a narrow (e.g. 1:4) region again.
+        double up = Math.Max(OverlayMinSize.Width * sx / tw, OverlayMinSize.Height * sy / th);
+        if (up > 1.0)
+        {
+            tw = (int)Math.Round(tw * up);
+            th = (int)Math.Round(th * up);
+        }
 
         var target = new Size(
             (int)Math.Ceiling(tw / sx),
@@ -833,6 +869,15 @@ public sealed class MainWindow : Form
         {
             MinimumSize = OverlayMinSize; // the 960×600 chrome floor would otherwise clamp a small region back into a letterbox
             ClientSize = target;
+            // Re-entry returns to where the user left the overlay (clamped into that spot's work area) —
+            // without this the overlay pops up at the main window's corner instead. Anchor still wins below.
+            if (entry && _lastOverlayBounds is Rectangle prev)
+            {
+                Rectangle pwa = Screen.FromRectangle(prev).WorkingArea;
+                Location = new Point(
+                    Math.Clamp(prev.X, pwa.Left, Math.Max(pwa.Left, pwa.Right - Width)),
+                    Math.Clamp(prev.Y, pwa.Top, Math.Max(pwa.Top, pwa.Bottom - Height)));
+            }
             ReapplyAnchor();              // keep an anchored overlay pinned after the resize
         }
         finally
@@ -842,11 +887,14 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>Overlay exit: restore the chrome minimum and the window bounds captured at entry (no-op when the
-    /// fit was skipped).</summary>
+    /// fit was skipped). The overlay's bounds are remembered so the next entry starts at the size AND position the
+    /// user left, not the auto-fit at the main window's corner.</summary>
     private void RestoreOverlayBounds()
     {
         if (_preOverlayBounds is not Rectangle bounds)
             return;
+        if (WindowState == FormWindowState.Normal)
+            _lastOverlayBounds = Bounds; // borderless — window bounds and client size coincide
         _preOverlayBounds = null;
         _suppressPlacementEvents = true;
         try
@@ -1011,6 +1059,8 @@ public sealed class MainWindow : Form
     private void ApplyRegion(Sumbo.Core.Region? region)
     {
         _mirror.SetRegion(region);
+        if (_uiHidden)
+            RefitOverlay(); // the crop's shape changed — the frameless window must follow it or it letterboxes
         SyncPanels();
         Invalidate(_mirrorRect);
     }
@@ -1060,6 +1110,8 @@ public sealed class MainWindow : Form
 
         if (applied)
         {
+            if (_uiHidden)
+                RefitOverlay(); // the crop's shape changed — the frameless window must follow it or it letterboxes
             SyncPanels();
             Invalidate(_mirrorRect);
         }
@@ -1717,7 +1769,7 @@ public sealed class MainWindow : Form
         int ph = (int)Math.Round(_mirrorRect.Height * sy);
 
         // Overlay is frameless — the thumbnail runs edge-to-edge; normal mode keeps the drawn frame visible. In
-        // overlay with the border toggle on, reserve a thin margin so the drawn black frame is not covered.
+        // overlay with the border toggle on, reserve a thin margin so the drawn frame is not covered.
         int margin = _uiHidden
             ? (_showMirrorBorder ? Math.Max(1, (int)Math.Round(OverlayBorderDip * sx)) : 0)
             : Math.Max(2, (int)Math.Round(BorderDip * sx));
@@ -1795,8 +1847,8 @@ public sealed class MainWindow : Form
             g.FillRectangle(bg, ClientRectangle); // frameless — the thumbnail covers the whole client edge-to-edge
             if (_showMirrorBorder)
             {
-                // Thin black frame in the margin MirrorHostPhysical reserves (the thumbnail is inset to leave it visible).
-                using var pen = new Pen(Color.Black, OverlayBorderDip);
+                // Thin accent frame in the margin MirrorHostPhysical reserves (the thumbnail is inset to leave it visible).
+                using var pen = new Pen(Theme.Accent, OverlayBorderDip);
                 g.DrawRectangle(pen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
             }
             return;
@@ -2049,6 +2101,8 @@ public sealed class MainWindow : Form
             RestoreFromTray();
             return;
         }
+
+
 
         // Mark a user close gesture (Alt+F4 / system menu / taskbar close = SC_CLOSE) here. WinForms' CloseReason
         // is order-dependent — a cancelled close leaves UserClosing behind and contaminates a following raw
