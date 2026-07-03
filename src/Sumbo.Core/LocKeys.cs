@@ -101,6 +101,22 @@ public static class LocKeys
     public const string Settings_Section_Language = "settings.section.language";
     public const string Settings_Language_Ko = "settings.language.ko";
     public const string Settings_Language_En = "settings.language.en";
+    public const string Settings_Language_Ja = "settings.language.ja";
+    public const string Settings_Language_Zh = "settings.language.zh";
+    public const string Settings_Language_Es = "settings.language.es";
+    public const string Settings_Language_De = "settings.language.de";
+    public const string Settings_Language_Fr = "settings.language.fr";
+    public const string Settings_Language_Pt = "settings.language.pt";
+    public const string Settings_Language_Ru = "settings.language.ru";
+    public const string Settings_Language_It = "settings.language.it";
+    public const string Settings_Language_Id = "settings.language.id";
+    public const string Settings_Language_Vi = "settings.language.vi";
+    public const string Settings_Language_Tr = "settings.language.tr";
+    public const string Settings_Language_Pl = "settings.language.pl";
+    public const string Settings_Language_Nl = "settings.language.nl";
+    public const string Settings_Language_Uk = "settings.language.uk";
+    public const string Settings_Language_El = "settings.language.el";
+    public const string Settings_Language_Fil = "settings.language.fil";
     public const string Settings_Section_Startup = "settings.section.startup";
 
     // ── Main window control panel ──
@@ -190,7 +206,12 @@ public static class LocKeys
         Dialog_HotkeyConflict_Caption, Dialog_AutoStartFailed_Body, Dialog_AutoStartFailed_Caption,
         Tray_ToggleVisible, Tray_AutoStart, Tray_MinimizeToTray, Tray_Exit,
         Tray_ResidentNotice_Title, Tray_ResidentNotice_Body,
-        Settings_Section_Language, Settings_Language_Ko, Settings_Language_En, Settings_Section_Startup,
+        Settings_Section_Language, Settings_Language_Ko, Settings_Language_En,
+        Settings_Language_Ja, Settings_Language_Zh, Settings_Language_Es,
+        Settings_Language_De, Settings_Language_Fr, Settings_Language_Pt, Settings_Language_Ru,
+        Settings_Language_It, Settings_Language_Id, Settings_Language_Vi, Settings_Language_Tr,
+        Settings_Language_Pl, Settings_Language_Nl, Settings_Language_Uk, Settings_Language_El,
+        Settings_Language_Fil, Settings_Section_Startup,
         Main_SearchPlaceholder, Main_StatusRunning,
         Main_HideUi, Main_Opacity, Main_Display_Title,
         Main_Display_Subtitle, Main_Behavior_Subtitle, Main_Display_Size, Main_Display_Anchor, Main_Anchor_Center,

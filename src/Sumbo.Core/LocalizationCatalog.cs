@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Runtime string catalog for the localized (ko/en) UI with runtime language switching. Keyed by
+/// Runtime string catalog for the localized (ko/en/ja/zh/es) UI with runtime language switching. Keyed by
 /// <see cref="LocKeys"/> IDs; values come from per-language JSON tables. The catalog is an injected instance
 /// (no static/framework culture probing) so it composes with the app's DI convention and stays test-isolated.
 /// <para>
@@ -26,8 +26,10 @@ public sealed class LocalizationCatalog
 {
     public const string DefaultLanguage = "ko";
 
-    // Supported UI languages. Kept ordinal + explicit; extend by adding an embedded table.
-    private static readonly string[] SupportedLanguages = { "ko", "en" };
+    // Supported UI languages, in display order (drives the language selector + index↔code mapping).
+    // Kept ordinal + explicit; extend by adding a matching embedded lang.{code}.json table.
+    private static readonly string[] SupportedLanguages =
+        { "ko", "en", "ja", "zh", "es", "de", "fr", "pt", "ru", "it", "id", "vi", "tr", "pl", "nl", "uk", "el", "fil" };
 
     // lang -> (key -> value). Read-only after construction.
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> _tables;

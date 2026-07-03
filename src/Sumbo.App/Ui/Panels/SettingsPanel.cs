@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using Sumbo.Core;
@@ -16,14 +17,17 @@ internal sealed class SettingsPanel : PanelView
 {
     private readonly Label _sub = new();
     private readonly Label _langLabel = new();
-    private readonly SegmentedControl _langSeg = new();
+    private readonly SumboDropDown _langDrop = new();
     private readonly Label _startupLabel = new();
+
+    // Ordered supported-language codes = the single source for item order and index↔code mapping (no ko/en literals).
+    private readonly IReadOnlyList<string> _codes = LocalizationCatalog.AvailableLanguages;
     private readonly ModeRow _rowStartWithWindows = new();
     private readonly ModeRow _rowMinimizeToTray = new();
 
     private bool _syncing; // guards handlers while ReflectSettings seeds the controls
 
-    /// <summary>User picked a language ("ko"/"en"). Shell route: <see cref="CloneManager.SetLanguage"/> + reflect.</summary>
+    /// <summary>User picked a supported language code. Shell route: <see cref="CloneManager.SetLanguage"/> + reflect.</summary>
     public event EventHandler<string>? LanguageSelected;
 
     /// <summary>Launch-at-startup toggle. Shell route: <see cref="CloneManager.SetStartWithWindows"/> (may be
@@ -44,10 +48,12 @@ internal sealed class SettingsPanel : PanelView
         _startupLabel.BackColor = Theme.PanelBg; _startupLabel.ForeColor = Theme.TextSecondary; _startupLabel.Font = Theme.H2;
         _startupLabel.AutoSize = false; _startupLabel.TextAlign = ContentAlignment.MiddleLeft;
 
-        _langSeg.SelectedIndexChanged += (_, _) =>
+        _langDrop.SelectedIndexChanged += (_, _) =>
         {
             if (_syncing) return;
-            LanguageSelected?.Invoke(this, _langSeg.SelectedIndex == 1 ? "en" : "ko");
+            int i = _langDrop.SelectedIndex;
+            if (i >= 0 && i < _codes.Count)
+                LanguageSelected?.Invoke(this, _codes[i]);
         };
         _rowStartWithWindows.Toggle.CheckedChanged += (_, _) =>
         {
@@ -62,7 +68,7 @@ internal sealed class SettingsPanel : PanelView
 
         Controls.Add(_sub);
         Controls.Add(_langLabel);
-        Controls.Add(_langSeg);
+        Controls.Add(_langDrop);
         Controls.Add(_startupLabel);
         Controls.Add(_rowStartWithWindows);
         Controls.Add(_rowMinimizeToTray);
@@ -75,7 +81,7 @@ internal sealed class SettingsPanel : PanelView
         _syncing = true;
         try
         {
-            _langSeg.SelectedIndex = settings.Language == "en" ? 1 : 0;
+            _langDrop.SelectedIndex = Math.Max(0, IndexOfCode(LocalizationCatalog.Normalize(settings.Language)));
             _rowStartWithWindows.Toggle.Checked = settings.StartWithWindows;
             _rowMinimizeToTray.Toggle.Checked = settings.MinimizeToTray;
         }
@@ -89,10 +95,20 @@ internal sealed class SettingsPanel : PanelView
     {
         _sub.Text = loc.Get(LocKeys.Main_Settings_Subtitle);
         _langLabel.Text = loc.Get(LocKeys.Settings_Section_Language);
-        _langSeg.Items = new[] { loc.Get(LocKeys.Settings_Language_Ko), loc.Get(LocKeys.Settings_Language_En) };
+        var langItems = new string[_codes.Count];
+        for (int i = 0; i < _codes.Count; i++)
+            langItems[i] = loc.Get("settings.language." + _codes[i]); // convention key == LocKeys.Settings_Language_* (All[]-covered)
+        _langDrop.Items = langItems;
         _startupLabel.Text = loc.Get(LocKeys.Settings_Section_Startup);
         _rowStartWithWindows.SetText(loc.Get(LocKeys.Tray_AutoStart), string.Empty);
         _rowMinimizeToTray.SetText(loc.Get(LocKeys.Tray_MinimizeToTray), string.Empty);
+    }
+
+    private int IndexOfCode(string code)
+    {
+        for (int i = 0; i < _codes.Count; i++)
+            if (_codes[i] == code) return i;
+        return -1;
     }
 
     protected override void OnLayout(LayoutEventArgs levent)
@@ -108,7 +124,7 @@ internal sealed class SettingsPanel : PanelView
 
         _langLabel.SetBounds(x, y, cw, 20);
         y += 20 + 8;
-        _langSeg.SetBounds(x, y, cw, 42);
+        _langDrop.SetBounds(x, y, cw, 42);
         y += 42 + 18;
 
         _startupLabel.SetBounds(x, y, cw, 20);

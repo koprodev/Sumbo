@@ -33,6 +33,7 @@ public sealed class MainWindow : Form
     private const int Grip = 6;         // borderless resize-grip margin (form-surface ring on the edges)
     private const int TitleH = Theme.TitleBarHeight;
     private const int BorderDip = 3;    // canvas frame margin reserved around the thumbnail
+    private const int OverlayBorderDip = 1; // thin frame drawn in overlay mode when the border toggle is on
 
     private readonly CloneManager _manager;
     private readonly LocalizationCatalog _loc;
@@ -137,7 +138,16 @@ public sealed class MainWindow : Form
     private ToolStripMenuItem _ctxRegion = null!;
     private ToolStripMenuItem _ctxForward = null!;
     private ToolStripMenuItem _ctxThrough = null!;
+    private ToolStripMenuItem _ctxLock = null!;
+    private ToolStripMenuItem _ctxAot = null!;
+    private ToolStripMenuItem _ctxOpacity = null!;
+    private ToolStripMenuItem[] _ctxOpacityPresets = null!;
+    private ToolStripMenuItem _ctxMinimize = null!;
     private ToolStripMenuItem _ctxSettings = null!;
+    private ToolStripMenuItem _ctxExit = null!;        // overlay only — full app exit without leaving UI-hidden mode
+    private ToolStripSeparator _ctxExitSep = null!;
+
+    private static readonly int[] OpacityPresets = { 100, 75, 50, 25 };
 
     public MainWindow(CloneManager manager, LocalizationCatalog localization)
     {
@@ -256,18 +266,39 @@ public sealed class MainWindow : Form
         _ctxRestoreUi = new ToolStripMenuItem();
         _ctxRestoreUi.Click += (_, _) => RestoreUserInterface();
         _ctxRestoreSep = new ToolStripSeparator();
-        _ctxTarget = new ToolStripMenuItem();
+        // Global-hotkey chords shown right-aligned via ShortcutKeyDisplayString (display only — the keys are
+        // registered globally elsewhere, not as local menu shortcuts).
+        _ctxTarget = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.PickWindow) };
         _ctxTarget.Click += (_, _) => { SetActivePanel(PanelTargets); _targetsPanel.ReloadTargets(); };
         _ctxStop = new ToolStripMenuItem();
         _ctxStop.Click += (_, _) => _mirror.Stop();
-        _ctxRegion = new ToolStripMenuItem();
+        _ctxRegion = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.RegionSelect) };
         _ctxRegion.Click += (_, _) => EnterRegionSelect();
         _ctxForward = new ToolStripMenuItem();
         _ctxForward.Click += (_, _) => SetClickForward(!_clickForward);
-        _ctxThrough = new ToolStripMenuItem();
+        _ctxThrough = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.ClickThrough) };
         _ctxThrough.Click += (_, _) => SetClickThrough(!_clickThrough);
+        _ctxLock = new ToolStripMenuItem();
+        _ctxLock.Click += (_, _) => OnLockToggleRequested(this, !_locked);
+        _ctxAot = new ToolStripMenuItem();
+        _ctxAot.Click += (_, _) => SetAlwaysOnTop(!_alwaysOnTop);
+        _ctxOpacity = new ToolStripMenuItem();
+        _ctxOpacityPresets = new ToolStripMenuItem[OpacityPresets.Length];
+        for (int i = 0; i < OpacityPresets.Length; i++)
+        {
+            int pct = OpacityPresets[i];
+            var preset = new ToolStripMenuItem($"{pct}%");
+            preset.Click += (_, _) => ApplyOpacity(pct);
+            _ctxOpacityPresets[i] = preset;
+            _ctxOpacity.DropDownItems.Add(preset);
+        }
+        _ctxMinimize = new ToolStripMenuItem();
+        _ctxMinimize.Click += (_, _) => HideToTray(notice: false); // explicit request — retire to tray even when close-to-tray is off
         _ctxSettings = new ToolStripMenuItem();
         _ctxSettings.Click += (_, _) => SetActivePanel(PanelSettings);
+        _ctxExit = new ToolStripMenuItem();
+        _ctxExit.Click += (_, _) => CloseForExit(); // real quit — same single exit funnel as the tray Exit command
+        _ctxExitSep = new ToolStripSeparator();
 
         _mirrorMenu.Items.AddRange(new ToolStripItem[]
         {
@@ -276,9 +307,12 @@ public sealed class MainWindow : Form
             new ToolStripSeparator(),
             _ctxStop, _ctxRegion,
             new ToolStripSeparator(),
-            _ctxForward, _ctxThrough,
+            _ctxForward, _ctxThrough, _ctxLock, _ctxAot, _ctxOpacity,
+            new ToolStripSeparator(),
+            _ctxMinimize,
             new ToolStripSeparator(),
             _ctxSettings,
+            _ctxExitSep, _ctxExit,
         });
 
         _mirrorMenu.Opening += (_, _) =>
@@ -286,12 +320,20 @@ public sealed class MainWindow : Form
             bool m = _mirror.HasMirror;
             _ctxRestoreUi.Visible = _uiHidden; // grip-menu entry — meaningless while the UI is already shown
             _ctxRestoreSep.Visible = _uiHidden;
+            _ctxExit.Visible = _uiHidden;      // overlay has no chrome/tray affordance in reach — offer a real exit here
+            _ctxExitSep.Visible = _uiHidden;
             _ctxStop.Enabled = m;
             _ctxRegion.Enabled = m;
             _ctxForward.Enabled = m && !_clickThrough; // forwarding and click-through are mutually exclusive
             _ctxForward.Checked = _clickForward;
             _ctxThrough.Enabled = m && _manager.IsClickThroughHotkeyLive;
             _ctxThrough.Checked = _clickThrough;
+            _ctxLock.Checked = _locked;
+            _ctxAot.Checked = _alwaysOnTop;
+            _ctxOpacity.Enabled = m;
+            int cur = _mirror.OpacityPercent;
+            for (int i = 0; i < OpacityPresets.Length; i++)
+                _ctxOpacityPresets[i].Checked = OpacityPresets[i] == cur;
         };
     }
 
@@ -1392,7 +1434,8 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>A user close GESTURE (chrome X · Alt+F4 · system menu/taskbar close = SC_CLOSE) retires to the
-    /// tray instead of exiting. Everything else — a raw external <c>WM_CLOSE</c> (taskkill/scripts), Windows
+    /// tray instead of exiting <b>only when Minimize-to-Tray is enabled</b>; with it off the window closes for real.
+    /// Everything else — a raw external <c>WM_CLOSE</c> (taskkill/scripts), Windows
     /// shutdown/logoff, task manager, <see cref="CloseForExit"/> — keeps closing for real, so automation and the
     /// OS can always end the process gracefully. The gesture flag (not the form's <c>CloseReason</c>) is the
     /// discriminator: a cancelled close leaves <c>CloseReason.UserClosing</c> behind, which would misroute the
@@ -1402,7 +1445,7 @@ public sealed class MainWindow : Form
         base.OnFormClosing(e);
         bool gesture = _userCloseGesture;
         _userCloseGesture = false; // consume once — must not contaminate the next close decision
-        if (!e.Cancel && gesture && e.CloseReason == CloseReason.UserClosing && !_exitRequested)
+        if (!e.Cancel && gesture && e.CloseReason == CloseReason.UserClosing && !_exitRequested && _manager.MinimizeToTray)
         {
             e.Cancel = true;
             HideToTray(notice: true);
@@ -1673,8 +1716,11 @@ public sealed class MainWindow : Form
         int pw = (int)Math.Round(_mirrorRect.Width * sx);
         int ph = (int)Math.Round(_mirrorRect.Height * sy);
 
-        // Overlay is frameless — the thumbnail runs edge-to-edge; normal mode keeps the drawn frame visible.
-        int margin = _uiHidden ? 0 : Math.Max(2, (int)Math.Round(BorderDip * sx));
+        // Overlay is frameless — the thumbnail runs edge-to-edge; normal mode keeps the drawn frame visible. In
+        // overlay with the border toggle on, reserve a thin margin so the drawn black frame is not covered.
+        int margin = _uiHidden
+            ? (_showMirrorBorder ? Math.Max(1, (int)Math.Round(OverlayBorderDip * sx)) : 0)
+            : Math.Max(2, (int)Math.Round(BorderDip * sx));
         return new RECT(
             px + margin,
             py + margin,
@@ -1714,15 +1760,23 @@ public sealed class MainWindow : Form
         _ctxRegion.Text = _loc.Get(LocKeys.Menu_Region_Select);
         _ctxForward.Text = _loc.Get(LocKeys.Menu_Mode_ClickForward);
         _ctxThrough.Text = _loc.Get(LocKeys.Menu_Mode_ClickThrough);
+        _ctxLock.Text = _loc.Get(LocKeys.Menu_Mode_Lock);
+        _ctxAot.Text = _loc.Get(LocKeys.Main_Display_AlwaysOnTop);
+        _ctxOpacity.Text = _loc.Get(LocKeys.Main_Opacity);
+        _ctxMinimize.Text = _loc.Get(LocKeys.Tray_MinimizeToTray);
         _ctxSettings.Text = _loc.Get(LocKeys.Menu_Settings);
+        _ctxExit.Text = _loc.Get(LocKeys.Tray_Exit);
 
         DoLayout();
     }
 
-    private static string PickWindowChord()
+    private static string PickWindowChord() => ChordFor(HotkeyAction.PickWindow);
+
+    /// <summary>Display chord for a global-hotkey action (menu right-align text), empty when unbound.</summary>
+    private static string ChordFor(HotkeyAction action)
     {
         foreach (HotkeyBinding b in HotkeyService.Defaults)
-            if (b.Action == HotkeyAction.PickWindow) return b.Display;
+            if (b.Action == action) return b.Display;
         return "";
     }
 
@@ -1739,6 +1793,12 @@ public sealed class MainWindow : Form
         {
             using var bg = new SolidBrush(Theme.InsetBg);
             g.FillRectangle(bg, ClientRectangle); // frameless — the thumbnail covers the whole client edge-to-edge
+            if (_showMirrorBorder)
+            {
+                // Thin black frame in the margin MirrorHostPhysical reserves (the thumbnail is inset to leave it visible).
+                using var pen = new Pen(Color.Black, OverlayBorderDip);
+                g.DrawRectangle(pen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+            }
             return;
         }
 

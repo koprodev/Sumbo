@@ -20,6 +20,22 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\lang.ko.json" WithCulture="false" LogicalName="Sumbo.Core.lang.ko.json" />
     <EmbeddedResource Include="Resources\lang.en.json" WithCulture="false" LogicalName="Sumbo.Core.lang.en.json" />
+    <EmbeddedResource Include="Resources\lang.ja.json" WithCulture="false" LogicalName="Sumbo.Core.lang.ja.json" />
+    <EmbeddedResource Include="Resources\lang.zh.json" WithCulture="false" LogicalName="Sumbo.Core.lang.zh.json" />
+    <EmbeddedResource Include="Resources\lang.es.json" WithCulture="false" LogicalName="Sumbo.Core.lang.es.json" />
+    <EmbeddedResource Include="Resources\lang.de.json" WithCulture="false" LogicalName="Sumbo.Core.lang.de.json" />
+    <EmbeddedResource Include="Resources\lang.fr.json" WithCulture="false" LogicalName="Sumbo.Core.lang.fr.json" />
+    <EmbeddedResource Include="Resources\lang.pt.json" WithCulture="false" LogicalName="Sumbo.Core.lang.pt.json" />
+    <EmbeddedResource Include="Resources\lang.ru.json" WithCulture="false" LogicalName="Sumbo.Core.lang.ru.json" />
+    <EmbeddedResource Include="Resources\lang.it.json" WithCulture="false" LogicalName="Sumbo.Core.lang.it.json" />
+    <EmbeddedResource Include="Resources\lang.id.json" WithCulture="false" LogicalName="Sumbo.Core.lang.id.json" />
+    <EmbeddedResource Include="Resources\lang.vi.json" WithCulture="false" LogicalName="Sumbo.Core.lang.vi.json" />
+    <EmbeddedResource Include="Resources\lang.tr.json" WithCulture="false" LogicalName="Sumbo.Core.lang.tr.json" />
+    <EmbeddedResource Include="Resources\lang.pl.json" WithCulture="false" LogicalName="Sumbo.Core.lang.pl.json" />
+    <EmbeddedResource Include="Resources\lang.nl.json" WithCulture="false" LogicalName="Sumbo.Core.lang.nl.json" />
+    <EmbeddedResource Include="Resources\lang.uk.json" WithCulture="false" LogicalName="Sumbo.Core.lang.uk.json" />
+    <EmbeddedResource Include="Resources\lang.el.json" WithCulture="false" LogicalName="Sumbo.Core.lang.el.json" />
+    <EmbeddedResource Include="Resources\lang.fil.json" WithCulture="false" LogicalName="Sumbo.Core.lang.fil.json" />
   </ItemGroup>
 
 </Project>

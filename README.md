@@ -41,9 +41,11 @@ to the mirrored app).
 - **Profiles** — save target + region + opacity + placement, reapply in one click.
 - **Group switching** — register several windows and cycle through them (`Ctrl+Alt+G`).
 - **Overlay mode (UI hide)** — chrome disappears, only the mirrored content stays.
-- **Tray resident** — closing (X) hides to the tray; exit from the tray menu.
-  Optional start-with-Windows.
-- **English / Korean UI**, switchable at runtime.
+- **Tray resident** — closing (X) hides to the tray (turn it off in Settings to make
+  X exit for real); exit from the tray menu. Optional start-with-Windows.
+- **UI in 18 languages**, switchable at runtime — English·한국어·日本語·简体中文·
+  Español·Deutsch·Français·Português·Русский·Italiano·Bahasa Indonesia·Tiếng Việt·
+  Türkçe·Polski·Nederlands·Українська·Ελληνικά·Filipino.
 
 ## Download & install
 
@@ -91,6 +93,25 @@ Pick one from [Releases](https://github.com/koprodev/Sumbo/releases):
 - Multi-monitor per-monitor-DPI transitions have had limited real-hardware
   verification. Reports are welcome via
   [Issues](https://github.com/koprodev/Sumbo/issues).
+
+## FAQ · Tips
+
+**Q. I mirror a browser video (Chrome / Edge / Whale…), and it freezes whenever the
+browser is covered by another window.**
+
+That is the browser's power-saving occlusion detection, not Sumbo. Chromium-based
+browsers stop rendering when their window is **completely** covered by other opaque
+windows — and since Sumbo only re-composites what the source window draws (it never
+touches the source), the mirror freezes with it. This is also why the symptom seems
+to depend on which app is in front: transparent/layered windows don't count as
+occluders.
+
+Fix: in the browser shortcut's properties, append the flag below to the **Target**
+field (after a space), then fully quit and restart the browser.
+
+```
+--disable-features=CalculateNativeWinOcclusion
+```
 
 ## Building from source
 

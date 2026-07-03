@@ -32,27 +32,25 @@ public class LocalizationCatalogTests : IDisposable
     }
 
     [Fact]
-    public void Load_EmbeddedTables_CoverEveryKey() // drift guard — every LocKeys const must exist in ko + en
+    public void Load_EmbeddedTables_CoverEveryKey() // drift guard — every LocKeys const must exist in every supported language
     {
         LocalizationCatalog catalog = LocalizationCatalog.Load("ko", null);
 
         var missing = new List<string>();
-        foreach (string key in LocKeys.All)
-        {
-            if (!catalog.TryGet("ko", key, out _)) missing.Add($"ko:{key}");
-            if (!catalog.TryGet("en", key, out _)) missing.Add($"en:{key}");
-        }
+        foreach (string lang in LocalizationCatalog.AvailableLanguages)
+            foreach (string key in LocKeys.All)
+                if (!catalog.TryGet(lang, key, out _)) missing.Add($"{lang}:{key}");
 
         Assert.Empty(missing);
     }
 
     [Fact]
-    public void EmbeddedManifest_ContainsBothLanguageResources()
+    public void EmbeddedManifest_ContainsEveryLanguageResource() // guards a forgotten csproj EmbeddedResource line
     {
         string[] names = typeof(LocalizationCatalog).Assembly.GetManifestResourceNames();
 
-        Assert.Contains(names, n => n.EndsWith("lang.ko.json", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(names, n => n.EndsWith("lang.en.json", StringComparison.OrdinalIgnoreCase));
+        foreach (string lang in LocalizationCatalog.AvailableLanguages)
+            Assert.Contains(names, n => n.EndsWith($"lang.{lang}.json", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -92,7 +90,11 @@ public class LocalizationCatalogTests : IDisposable
     [InlineData("ko", "ko")]
     [InlineData("en", "en")]
     [InlineData("EN", "en")]   // case-insensitive
-    [InlineData("ja", "ko")]   // unsupported → default
+    [InlineData("ja", "ja")]
+    [InlineData("zh", "zh")]
+    [InlineData("es", "es")]
+    [InlineData("ES", "es")]   // case-insensitive
+    [InlineData("xx", "ko")]   // unsupported → default (xx = never a real language code)
     [InlineData(null, "ko")]   // null → default
     public void Normalize_CoercesToSupportedOrDefault(string? input, string expected)
     {
@@ -102,7 +104,7 @@ public class LocalizationCatalogTests : IDisposable
     [Fact]
     public void Load_UnsupportedLanguage_StartsOnNormalizedDefault()
     {
-        LocalizationCatalog catalog = LocalizationCatalog.Load("ja", null);
+        LocalizationCatalog catalog = LocalizationCatalog.Load("xx", null);
 
         Assert.Equal("ko", catalog.Language);
     }

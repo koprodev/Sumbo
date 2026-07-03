@@ -73,7 +73,7 @@ public sealed class CloneManager : IDisposable
         _profiles = new ProfileService(Path.Combine(appDataDir, "profiles.json"));
 
         // Pin _settings.Language to the catalog's normalized value, so an unsupported persisted value
-        // ("ja") can't linger here (and get re-saved) while the UI has already fallen back to the default.
+        // ("fr") can't linger here (and get re-saved) while the UI has already fallen back to the default.
         _settings = settings with { Language = localization.Language };
         _autoStart = new AutoStartRegistrar();
         _autoStart.Reconcile(_settings.StartWithWindows); // self-heal the Run entry against the persisted setting
