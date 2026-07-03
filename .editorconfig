@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+indent_style = space
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_size = 4
+csharp_style_namespace_declarations = file_scoped:suggestion
+dotnet_sort_system_directives_first = true
+
+[*.{csproj,json,xml}]
+indent_size = 2
+
+# M6 control-panel custom-drawn controls (Sumbo.App) are built and configured entirely in code —
+# there is no WinForms designer, .resx or InitializeComponent for them — so the designer-serialization
+# guidance WFO1000 ("configure code serialization for the property") does not apply here.
+[src/Sumbo.App/**/*.cs]
+dotnet_diagnostic.WFO1000.severity = none

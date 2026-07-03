@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sumbo.App/Sumbo.App.csproj" />
+    <Project Path="src/Sumbo.Core/Sumbo.Core.csproj" />
+    <Project Path="src/Sumbo.Native/Sumbo.Native.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sumbo.Core.Tests/Sumbo.Core.Tests.csproj" />
+  </Folder>
+</Solution>

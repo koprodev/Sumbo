@@ -1,0 +1,12 @@
+# .NET build output
+bin/
+obj/
+
+# VS / Rider / VSCode user state
+.vs/
+*.user
+.idea/
+
+# Publish output
+publish/
+*.zip
