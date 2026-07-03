@@ -14,6 +14,10 @@ to the mirrored app).
 
 > Interface shown in English with sample data.
 
+**Watch a video while you game** — pin it on the left, with zero impact on the game window.
+
+![Sumbo showing a video pinned over a game](docs/screenshots/hero-gaming.jpg)
+
 ![Sumbo mirroring a window with the display panel open](docs/screenshots/hero-display.png)
 
 |  |  |

@@ -12,6 +12,10 @@
 
 > 영어 인터페이스 · 예시 데이터로 표시.
 
+**게임을 하면서 영상 시청** — 왼쪽에 고정해 두어도 게임 창에는 아무 영향이 없습니다.
+
+![게임 위에 영상을 고정한 Sumbo](docs/screenshots/hero-gaming.jpg)
+
 ![표시 패널을 연 채 창을 미러링하는 Sumbo](docs/screenshots/hero-display.png)
 
 |  |  |

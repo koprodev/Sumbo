@@ -28,7 +28,7 @@ if (-not (Test-Path $PublicDir)) { New-Item -ItemType Directory -Path $PublicDir
 foreach ($d in $dirs) {
     $srcPath = Join-Path $repo $d
     if (-not (Test-Path $srcPath)) { throw "allowlist 디렉토리 없음: $srcPath" }
-    robocopy $srcPath (Join-Path $PublicDir $d) /MIR /XD bin obj /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy $srcPath (Join-Path $PublicDir $d) /MIR /XD bin obj _src /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy 실패(exit $LASTEXITCODE): $d" }
 }
 foreach ($f in $files) {

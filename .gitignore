@@ -7,6 +7,10 @@ obj/
 *.user
 .idea/
 
-# Publish output
+# Publish / release output
 publish/
+artifacts/
 *.zip
+
+# Screenshot source assets (composited into published screenshots, not published raw)
+docs/screenshots/_src/
