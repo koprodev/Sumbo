@@ -12,7 +12,7 @@
     <RootNamespace>Sumbo.App</RootNamespace>
     <AssemblyName>Sumbo</AssemblyName>
     <!-- Single source of truth for the product version; the About panel reads InformationalVersion. -->
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <ApplicationIcon>..\..\assets\sumbo.ico</ApplicationIcon>
   </PropertyGroup>
 

@@ -19,6 +19,7 @@
   "menu.mode.clickThrough": "Click-Through",
   "menu.mode.lock": "Lock Position/Size",
   "menu.mode.border": "Show Border",
+  "menu.restoreUi": "Restore UI",
   "menu.region.select": "Select Region",
   "menu.region.clear": "Clear Region",
   "menu.region.save": "Save Current Region…",

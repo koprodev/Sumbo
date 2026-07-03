@@ -36,6 +36,7 @@ public static class LocKeys
     public const string Menu_Mode_ClickThrough = "menu.mode.clickThrough";
     public const string Menu_Mode_Lock = "menu.mode.lock";
     public const string Menu_Mode_Border = "menu.mode.border";
+    public const string Menu_RestoreUi = "menu.restoreUi"; // overlay grip menu: leave UI-hidden mode (clears click-through too)
     public const string Menu_Region_Select = "menu.region.select";
     public const string Menu_Region_Clear = "menu.region.clear";
     public const string Menu_Region_Save = "menu.region.save";
@@ -172,7 +173,7 @@ public static class LocKeys
         Menu_Anchor_None, Menu_Anchor_TopLeft, Menu_Anchor_TopRight,
         Menu_Anchor_BottomLeft, Menu_Anchor_BottomRight, Menu_Anchor_Top, Menu_Anchor_Bottom,
         Menu_Anchor_Left, Menu_Anchor_Right, Menu_Mode_ClickForward,
-        Menu_Mode_ClickThrough, Menu_Mode_Lock, Menu_Mode_Border, Menu_Region_Select,
+        Menu_Mode_ClickThrough, Menu_Mode_Lock, Menu_Mode_Border, Menu_RestoreUi, Menu_Region_Select,
         Menu_Region_Clear, Menu_Region_Save, Menu_Region_Saved, Menu_Profile_Save,
         Menu_Profile_Load, Menu_Group_Add, Menu_Group_Clear,
         Menu_Group_Start, Menu_Group_Stop, Menu_Settings,

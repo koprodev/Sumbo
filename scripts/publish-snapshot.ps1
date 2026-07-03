@@ -19,7 +19,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot   # parent of scripts\ = repo root
 
 # ── Public allowlist (anything not listed here is never published) ──────────
-$dirs  = @('src', 'tests', 'assets', '.github', 'scripts', 'docs')
+$dirs  = @('src', 'tests', 'assets', '.github', 'scripts', 'docs', 'installer')
 $files = @('Sumbo.slnx', '.gitignore', '.editorconfig', 'LICENSE',
            'THIRD-PARTY-NOTICES.md', 'README.md', 'README.ko.md')
 

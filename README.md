@@ -47,12 +47,16 @@ to the mirrored app).
 
 ## Download & install
 
-1. Download `Sumbo-<version>-win-x64.zip` from
-   [Releases](https://github.com/koprodev/Sumbo/releases).
-2. Unzip anywhere and run `Sumbo.exe` — no installer, no admin rights, and no .NET
-   installation required (the runtime is bundled).
-3. *(Optional)* Verify the download: compare `Get-FileHash <file>` (PowerShell)
-   against `SHA256SUMS.txt` attached to the release.
+Pick one from [Releases](https://github.com/koprodev/Sumbo/releases):
+
+| Asset | Size | For |
+|---|---|---|
+| `Sumbo-<version>-win-x64.msi` | ~38 MB | **Installer** — per-user (no admin/UAC), Start-menu shortcut, uninstall from Apps & Features. Runtime bundled. |
+| `Sumbo-<version>-win-x64.zip` | ~45 MB | **Portable** — unzip anywhere and run `Sumbo.exe`. Runtime bundled, nothing to install. |
+| `Sumbo-<version>-win-x64-lite.zip` | ~0.2 MB | **Lite portable** — same app without the bundled runtime. Requires the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows prompts with a download link on first run if missing). |
+
+*(Optional)* Verify a download: compare `Get-FileHash <file>` (PowerShell) against
+`SHA256SUMS.txt` attached to the release.
 
 > **SmartScreen note**: release binaries are not code-signed. On first run Windows
 > may show "Windows protected your PC" — choose *More info → Run anyway*. If you
@@ -100,6 +104,11 @@ dotnet run --project src/Sumbo.App       # run
 dotnet publish src/Sumbo.App -c Release -r win-x64 --self-contained `
   /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true `
   /p:DebugType=embedded -o artifacts/publish/win-x64-single
+
+# Per-user MSI (what the release .msi contains) — WiX 5: dotnet tool install --global wix --version 5.0.2
+wix build installer/Package.wxs -arch x64 -d Version=<version> `
+  -d PublishDir=artifacts/publish/win-x64-single -d RepoDir=. `
+  -o artifacts/publish/Sumbo-<version>-win-x64.msi
 ```
 
 Project layout: `src/Sumbo.App` (WinForms UI) · `src/Sumbo.Core` (domain logic,

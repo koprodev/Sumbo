@@ -101,6 +101,10 @@ public sealed class MainWindow : Form
     private bool _alwaysOnTop;
     private bool _uiHidden;                 // overlay mode — rail/panel/title hidden, the whole client is the mirror
     private bool _preOverlaySideOpen;       // side-panel open state at overlay entry, reproduced on restore
+    private Rectangle? _preOverlayBounds;   // window bounds saved at overlay entry (auto-fit to region), restored on exit
+    private static readonly Size ChromeMinSize = new(960, 600); // floor while the rail + side panel are shown
+    private static readonly Size OverlayMinSize = new(100, 60);  // overlay has no chrome — allow shrinking to a small region
+    private OverlayGrip? _overlayGrip;      // separate top-level handle — stays clickable while the overlay is click-through
     private bool _suppressPlacementEvents;  // internal size/move changes must not clear the user's preset/anchor
     private bool _clickForwardFailWarned;   // one-time forward-failure notice; reset when forwarding is re-enabled
     private FormWindowState _lastWindowState = FormWindowState.Normal; // detects state transitions for panel reflect
@@ -110,6 +114,7 @@ public sealed class MainWindow : Form
     private readonly Icon _appIcon;         // borderless chrome, so only Alt-Tab/taskbar surfaces show it; disposed in OnFormClosed
     private const int MK_LBUTTON = 0x0001;
     private const int ScClose = 0xF060;     // WM_SYSCOMMAND SC_CLOSE
+    private readonly uint _showInstanceMsg = User32.RegisterWindowMessage(Program.ShowInstanceMessage); // second-launch surface signal
 
     // ── Embedded mirror ── the canvas is bare FORM SURFACE: OnPaint draws the frame + idle hint at
     // _mirrorRect, and the DWM thumbnail composites over its inner area. No child control may cover this rect.
@@ -125,6 +130,8 @@ public sealed class MainWindow : Form
 
     // ── Mirror right-click context menu ──
     private readonly ContextMenuStrip _mirrorMenu = new();
+    private ToolStripMenuItem _ctxRestoreUi = null!;   // overlay only — the grip menu's way back to the full window
+    private ToolStripSeparator _ctxRestoreSep = null!;
     private ToolStripMenuItem _ctxTarget = null!;
     private ToolStripMenuItem _ctxStop = null!;
     private ToolStripMenuItem _ctxRegion = null!;
@@ -173,7 +180,7 @@ public sealed class MainWindow : Form
         BackColor = Theme.WindowBg;
         ForeColor = Theme.TextPrimary;
         Font = Theme.Body;
-        MinimumSize = new Size(960, 600);
+        MinimumSize = ChromeMinSize;
         ClientSize = new Size(1400, 820);
         DoubleBuffered = true;
         KeyPreview = true;
@@ -246,6 +253,9 @@ public sealed class MainWindow : Form
     /// display panel.</summary>
     private void BuildMirrorMenu()
     {
+        _ctxRestoreUi = new ToolStripMenuItem();
+        _ctxRestoreUi.Click += (_, _) => RestoreUserInterface();
+        _ctxRestoreSep = new ToolStripSeparator();
         _ctxTarget = new ToolStripMenuItem();
         _ctxTarget.Click += (_, _) => { SetActivePanel(PanelTargets); _targetsPanel.ReloadTargets(); };
         _ctxStop = new ToolStripMenuItem();
@@ -261,6 +271,7 @@ public sealed class MainWindow : Form
 
         _mirrorMenu.Items.AddRange(new ToolStripItem[]
         {
+            _ctxRestoreUi, _ctxRestoreSep,
             _ctxTarget,
             new ToolStripSeparator(),
             _ctxStop, _ctxRegion,
@@ -273,6 +284,8 @@ public sealed class MainWindow : Form
         _mirrorMenu.Opening += (_, _) =>
         {
             bool m = _mirror.HasMirror;
+            _ctxRestoreUi.Visible = _uiHidden; // grip-menu entry — meaningless while the UI is already shown
+            _ctxRestoreSep.Visible = _uiHidden;
             _ctxStop.Enabled = m;
             _ctxRegion.Enabled = m;
             _ctxForward.Enabled = m && !_clickThrough; // forwarding and click-through are mutually exclusive
@@ -343,6 +356,8 @@ public sealed class MainWindow : Form
     /// point for both user clicks and programmatic switches (e.g. the PickWindow hotkey / tray OpenSettings).</summary>
     private void SetActivePanel(string id)
     {
+        if (_uiHidden)
+            RestoreUserInterface(); // a panel request from the grip menu implies returning to a fully USABLE window
         _activePanelId = id;
         _rail.SelectedIndex = Array.IndexOf(RailIds, id);
         _panelTitle.Text = PanelTitle(id);
@@ -378,6 +393,8 @@ public sealed class MainWindow : Form
     {
         base.OnShown(e);
         _targetsPanel.EnsureLoaded(); // first enumeration once the window (and its handle) exist
+        if (_alwaysOnTop)
+            SetAlwaysOnTop(true); // constructor's TopMost set was pre-Show — force the z-order now the window exists
     }
 
     /// <summary>Card click = start (or retarget) the embedded mirror. Re-clicking the already-mirrored target keeps
@@ -642,6 +659,17 @@ public sealed class MainWindow : Form
         SyncPanels();
     }
 
+    /// <summary>The one way back to a fully USABLE window (grip menu / panel requests from overlay): click-through
+    /// must fall first — restoring the UI alone would leave WS_EX_TRANSPARENT on the whole window, an interface
+    /// that shows but cannot be clicked. The click-through route itself restores the UI.</summary>
+    private void RestoreUserInterface()
+    {
+        if (_clickThrough)
+            SetClickThrough(false);
+        else if (_uiHidden)
+            SetOverlayMode(false);
+    }
+
     /// <summary>Hides/restores the chrome (rail/side panel/title) so the whole client becomes the mirror canvas.
     /// Restore reproduces the side-panel open state captured at entry.</summary>
     private void SetUiHidden(bool hidden)
@@ -663,7 +691,131 @@ public sealed class MainWindow : Form
             _sidePanel.Visible = _sideOpen;
         }
         _uiHidden = hidden;
+
+        if (hidden)
+            FitWindowToOverlay(); // shrink the window to what the mirror shows so no black frame is left around the region
+        else
+            RestoreOverlayBounds();
+
         DoLayout();
+
+        if (hidden)
+            ShowOverlayGrip(); // after the fit — the dot anchors to the final top-left
+        else
+            HideOverlayGrip();
+    }
+
+    /// <summary>Shows (creating on first use) the overlay control dot at the window's top-left corner. A separate
+    /// top-level window: it keeps taking mouse input while the overlay itself is click-through — left-drag moves
+    /// the overlay, right-click opens the mirror menu.</summary>
+    private void ShowOverlayGrip()
+    {
+        if (_overlayGrip is null)
+        {
+            _overlayGrip = new OverlayGrip();
+            _overlayGrip.DragMoved += OnGripDragMoved;
+            _overlayGrip.MenuRequested += OnGripMenuRequested;
+        }
+        int s = (int)Math.Round(OverlayGrip.LogicalSize * DeviceDpi / 96.0);
+        _overlayGrip.Size = new Size(s, s);
+        PositionOverlayGrip();
+        if (!_overlayGrip.Visible)
+            _overlayGrip.Show(this); // owned — always above the (topmost) overlay, hidden with it
+    }
+
+    private void HideOverlayGrip()
+    {
+        if (_overlayGrip is { Visible: true })
+            _overlayGrip.Hide();
+    }
+
+    private void PositionOverlayGrip()
+    {
+        _overlayGrip?.SetBounds(Left + 6, Top + 6, _overlayGrip.Width, _overlayGrip.Height,
+            BoundsSpecified.Location);
+    }
+
+    private void OnGripDragMoved(object? sender, Point delta)
+    {
+        if (_locked || WindowState != FormWindowState.Normal)
+            return;
+        Location = new Point(Left + delta.X, Top + delta.Y); // OnMove clears the anchor + re-pins the dot
+    }
+
+    private void OnGripMenuRequested(object? sender, EventArgs e)
+        => _mirrorMenu.Show(Cursor.Position);
+
+    /// <summary>Overlay entry: size the window so its canvas matches the shown content — the crop region when
+    /// clipped, else the full source — removing the letterbox a chrome-sized window leaves around a differently
+    /// shaped region. Skipped when locked or maximized; the pre-overlay bounds are saved for restore on exit.</summary>
+    private void FitWindowToOverlay()
+    {
+        _preOverlayBounds = null;
+        if (_locked || WindowState != FormWindowState.Normal)
+            return;
+        if (!_mirror.TryGetActiveSourceSize(out _, out _))
+            return;
+        _preOverlayBounds = Bounds;
+        ApplyOverlayFit();
+    }
+
+    /// <summary>Re-fit during overlay — a DPI change or a group-cycle retarget alters what the canvas must hold,
+    /// and the chrome-aware size-preset path must not run instead (it re-adds rail/title overhead the overlay does
+    /// not show). Keeps the entry-captured restore bounds; no-op when the entry fit was skipped.</summary>
+    private void RefitOverlay()
+    {
+        if (_preOverlayBounds is null || _locked || WindowState != FormWindowState.Normal)
+            return;
+        ApplyOverlayFit();
+    }
+
+    private void ApplyOverlayFit()
+    {
+        if (!_mirror.TryGetActiveSourceSize(out int srcW, out int srcH))
+            return;
+
+        (double sx, double sy) = ClientScale();
+        Rectangle wa = Screen.FromControl(this).WorkingArea;
+        int maxThumbW = Math.Max(1, (int)(wa.Width * sx));
+        int maxThumbH = Math.Max(1, (int)(wa.Height * sy));
+        // Source (1:1) capped to the work area, aspect preserved. Overlay is frameless — the client IS the
+        // thumbnail, so the DWM fit fills it edge-to-edge (no letterbox).
+        (int tw, int th) = WindowPlacement.ComputeSizeMode(ClientSizeMode.Source, srcW, srcH, maxThumbW, maxThumbH);
+
+        var target = new Size(
+            (int)Math.Ceiling(tw / sx),
+            (int)Math.Ceiling(th / sy));
+
+        _suppressPlacementEvents = true;
+        try
+        {
+            MinimumSize = OverlayMinSize; // the 960×600 chrome floor would otherwise clamp a small region back into a letterbox
+            ClientSize = target;
+            ReapplyAnchor();              // keep an anchored overlay pinned after the resize
+        }
+        finally
+        {
+            _suppressPlacementEvents = false;
+        }
+    }
+
+    /// <summary>Overlay exit: restore the chrome minimum and the window bounds captured at entry (no-op when the
+    /// fit was skipped).</summary>
+    private void RestoreOverlayBounds()
+    {
+        if (_preOverlayBounds is not Rectangle bounds)
+            return;
+        _preOverlayBounds = null;
+        _suppressPlacementEvents = true;
+        try
+        {
+            MinimumSize = ChromeMinSize; // WinForms grows the window to this; the bounds assignment below sets the real size
+            Bounds = bounds;
+        }
+        finally
+        {
+            _suppressPlacementEvents = false;
+        }
     }
 
     /// <summary>
@@ -716,6 +868,11 @@ public sealed class MainWindow : Form
     {
         _alwaysOnTop = on;
         TopMost = on;
+        // Setting TopMost before the handle exists (constructor) does not always take the WS_EX_TOPMOST z-order,
+        // so a fresh launch would sit behind other windows until toggled off→on. Force it explicitly once shown.
+        if (on && IsHandleCreated)
+            User32.SetWindowPos(Handle, User32.HWND_TOPMOST, 0, 0, 0, 0,
+                User32.SWP_NOMOVE | User32.SWP_NOSIZE | User32.SWP_NOACTIVATE);
         SyncPanels();
     }
 
@@ -767,6 +924,10 @@ public sealed class MainWindow : Form
                 SetClickThrough(false); // the route also restores the UI — no stranding on a transparent empty window
             else if (_uiHidden)
                 SetOverlayMode(false);
+        }
+        else if (_uiHidden)
+        {
+            RefitOverlay(); // group-cycle retarget: the new member's shape must not letterbox in the old member's frame
         }
         SyncPanels();
         Invalidate(_mirrorRect);
@@ -1512,7 +1673,8 @@ public sealed class MainWindow : Form
         int pw = (int)Math.Round(_mirrorRect.Width * sx);
         int ph = (int)Math.Round(_mirrorRect.Height * sy);
 
-        int margin = Math.Max(2, (int)Math.Round(BorderDip * sx)); // keep the drawn frame visible around the thumbnail
+        // Overlay is frameless — the thumbnail runs edge-to-edge; normal mode keeps the drawn frame visible.
+        int margin = _uiHidden ? 0 : Math.Max(2, (int)Math.Round(BorderDip * sx));
         return new RECT(
             px + margin,
             py + margin,
@@ -1546,6 +1708,7 @@ public sealed class MainWindow : Form
         _rail.UpdateTooltips(RailItems());
 
         // Context-menu labels reuse the panel vocabulary (same localization keys).
+        _ctxRestoreUi.Text = _loc.Get(LocKeys.Menu_RestoreUi);
         _ctxTarget.Text = _loc.Get(LocKeys.Menu_Target);
         _ctxStop.Text = _loc.Get(LocKeys.Main_StopMirror);
         _ctxRegion.Text = _loc.Get(LocKeys.Menu_Region_Select);
@@ -1574,7 +1737,8 @@ public sealed class MainWindow : Form
 
         if (_uiHidden)
         {
-            DrawMirrorArea(g); // overlay: mirror frame only — no title/logo/buttons
+            using var bg = new SolidBrush(Theme.InsetBg);
+            g.FillRectangle(bg, ClientRectangle); // frameless — the thumbnail covers the whole client edge-to-edge
             return;
         }
 
@@ -1791,11 +1955,23 @@ public sealed class MainWindow : Form
     protected override void OnMove(EventArgs e)
     {
         base.OnMove(e);
+        if (_uiHidden)
+            PositionOverlayGrip(); // the dot rides the overlay's top-left corner
         // A user move clears the anchor. Maximize transitions also change Location, hence the Normal-only gate.
         if (_suppressPlacementEvents || _anchor is null || WindowState != FormWindowState.Normal)
             return;
         _anchor = null;
         SyncPanels();
+    }
+
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+        // Tray-hide does not hide owned windows — the dot must follow the overlay out of and back into view.
+        if (!Visible)
+            HideOverlayGrip();
+        else if (_uiHidden)
+            ShowOverlayGrip();
     }
 
     protected override void OnResizeEnd(EventArgs e)
@@ -1806,6 +1982,14 @@ public sealed class MainWindow : Form
 
     protected override void WndProc(ref Message m)
     {
+        // A second launch broadcasts this registered message instead of starting a rival process: surface the
+        // existing window (it may be tray-resident or minimized) so the click feels like it focused the app.
+        if (m.Msg != 0 && m.Msg == _showInstanceMsg)
+        {
+            RestoreFromTray();
+            return;
+        }
+
         // Mark a user close gesture (Alt+F4 / system menu / taskbar close = SC_CLOSE) here. WinForms' CloseReason
         // is order-dependent — a cancelled close leaves UserClosing behind and contaminates a following raw
         // WM_CLOSE — so this flag is the deterministic discriminator.
@@ -1829,6 +2013,37 @@ public sealed class MainWindow : Form
             return;
         }
 
+        // Overlay grip-resize keeps the shown content's ratio: the fitted window must not regrow a letterbox,
+        // so the sizing rect is re-derived from the drag's driving axis. Overlay is frameless — the window IS
+        // the canvas, so the ratio applies to the rect directly.
+        if (m.Msg == User32.WM_SIZING && _uiHidden && _mirror.TryGetActiveSourceSize(out int ovW, out int ovH))
+        {
+            var r = Marshal.PtrToStructure<RECT>(m.LParam);
+            double ratio = (double)ovW / ovH;
+            int edge = (int)m.WParam.ToInt64();
+
+            int w = Math.Max(OverlayMinSize.Width, r.Right - r.Left);
+            int h = Math.Max(OverlayMinSize.Height, r.Bottom - r.Top);
+            if (edge is User32.WMSZ_TOP or User32.WMSZ_BOTTOM)
+                w = (int)Math.Round(h * ratio); // height drives
+            else
+                h = (int)Math.Round(w / ratio); // width drives (sides + corners)
+
+            // Grow/shrink away from the fixed side: a left/top drag moves that edge, so anchor the opposite one.
+            if (edge is User32.WMSZ_LEFT or User32.WMSZ_TOPLEFT or User32.WMSZ_BOTTOMLEFT)
+                r.Left = r.Right - w;
+            else
+                r.Right = r.Left + w;
+            if (edge is User32.WMSZ_TOP or User32.WMSZ_TOPLEFT or User32.WMSZ_TOPRIGHT)
+                r.Top = r.Bottom - h;
+            else
+                r.Bottom = r.Top + h;
+
+            Marshal.StructureToPtr(r, m.LParam, false);
+            m.Result = new IntPtr(1); // handled — DefWindowProc uses the adjusted rect
+            return;
+        }
+
         // Moved to a different-DPI monitor. WinForms rescales the window on base.WndProc; re-run layout
         // afterward so the mirror rect + its physical rcDestination are recomputed for the new DPI.
         if (m.Msg == User32.WM_DPICHANGED)
@@ -1845,7 +2060,9 @@ public sealed class MainWindow : Form
                 _suppressPlacementEvents = false;
             }
             DoLayout();
-            if (_sizeMode is ClientSizeMode mode && WindowState == FormWindowState.Normal)
+            if (_uiHidden)
+                RefitOverlay(); // the preset path would re-add chrome overhead the overlay does not show
+            else if (_sizeMode is ClientSizeMode mode && WindowState == FormWindowState.Normal)
                 ApplyMirrorSizeMode(mode); // recompute against the new monitor's DPI/work area (includes ReapplyAnchor)
             else
                 ReapplyAnchor();
@@ -1923,6 +2140,7 @@ public sealed class MainWindow : Form
         _groupTimer.Stop();
         _groupTimer.Dispose();
         _mirrorMenu.Dispose();
+        _overlayGrip?.Dispose();
         _sourceWatch.Stop();
         _sourceWatch.Dispose();
         _mirror.Dispose(); // unregister the DWM thumbnail

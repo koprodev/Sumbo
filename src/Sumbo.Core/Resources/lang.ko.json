@@ -19,6 +19,7 @@
   "menu.mode.clickThrough": "클릭 통과",
   "menu.mode.lock": "위치·크기 잠금",
   "menu.mode.border": "테두리 표시",
+  "menu.restoreUi": "UI 숨김 취소",
   "menu.region.select": "영역 선택",
   "menu.region.clear": "영역 해제",
   "menu.region.save": "현재 영역 저장…",

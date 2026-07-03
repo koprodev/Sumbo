@@ -57,7 +57,7 @@ internal sealed class BehaviorPanel : PanelView
 
         _rowBorder.Toggle.Checked = true; // matches the canvas ring's initial ON state
 
-        _hideUiBtn.Kind = ButtonKind.Dark; _hideUiBtn.CornerBack = Theme.PanelBg; _hideUiBtn.Font = Theme.BodySemi;
+        _hideUiBtn.Kind = ButtonKind.Primary; _hideUiBtn.CornerBack = Theme.PanelBg; _hideUiBtn.Font = Theme.BodySemi;
         _hideUiBtn.Glyph = Glyph.Hide; _hideUiBtn.GlyphSize = 12f;
         _hideUiHint.BackColor = Theme.PanelBg; _hideUiHint.ForeColor = Theme.TextMuted; _hideUiHint.Font = Theme.Small;
         _hideUiHint.AutoSize = false; _hideUiHint.TextAlign = ContentAlignment.MiddleLeft;

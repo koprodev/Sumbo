@@ -44,12 +44,16 @@
 
 ## 다운로드·설치
 
-1. [Releases](https://github.com/koprodev/Sumbo/releases) 에서
-   `Sumbo-<버전>-win-x64.zip` 다운로드.
-2. 원하는 위치에 압축 해제 후 `Sumbo.exe` 실행 — 설치 프로그램·관리자 권한·.NET
-   설치 전부 불필요합니다 (런타임 내장).
-3. *(선택)* 파일 검증: PowerShell `Get-FileHash <파일>` 결과를 릴리스에 첨부된
-   `SHA256SUMS.txt` 와 대조.
+[Releases](https://github.com/koprodev/Sumbo/releases) 에서 하나를 선택하세요:
+
+| 파일 | 크기 | 용도 |
+|---|---|---|
+| `Sumbo-<버전>-win-x64.msi` | ~38 MB | **설치형** — 사용자 단위 설치(관리자 권한·UAC 불필요), 시작 메뉴 등록, "앱 및 기능"에서 제거. 런타임 내장. |
+| `Sumbo-<버전>-win-x64.zip` | ~45 MB | **무설치(포터블)** — 압축 해제 후 `Sumbo.exe` 실행. 런타임 내장, 설치 불필요. |
+| `Sumbo-<버전>-win-x64-lite.zip` | ~0.2 MB | **경량 포터블** — 런타임 미동봉. [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) 필요 (없으면 첫 실행 시 Windows 가 다운로드 링크 안내). |
+
+*(선택)* 파일 검증: PowerShell `Get-FileHash <파일>` 결과를 릴리스에 첨부된
+`SHA256SUMS.txt` 와 대조.
 
 > **SmartScreen 안내**: 릴리스 바이너리는 코드 서명이 없습니다. 첫 실행 시
 > "Windows 의 PC 보호" 창이 뜨면 *추가 정보 → 실행* 을 선택하세요. 원하시면
@@ -97,6 +101,11 @@ dotnet run --project src/Sumbo.App       # 실행
 dotnet publish src/Sumbo.App -c Release -r win-x64 --self-contained `
   /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true `
   /p:DebugType=embedded -o artifacts/publish/win-x64-single
+
+# 사용자 단위 MSI(릴리스 .msi 와 동일) — WiX 5: dotnet tool install --global wix --version 5.0.2
+wix build installer/Package.wxs -arch x64 -d Version=<버전> `
+  -d PublishDir=artifacts/publish/win-x64-single -d RepoDir=. `
+  -o artifacts/publish/Sumbo-<버전>-win-x64.msi
 ```
 
 프로젝트 구조: `src/Sumbo.App`(WinForms UI) · `src/Sumbo.Core`(도메인 로직, UI

@@ -70,6 +70,26 @@ public static class User32
     public const uint SWP_NOACTIVATE = 0x0010;
     public const uint SWP_FRAMECHANGED = 0x0020;
 
+    /// <summary>SetWindowPos hWndInsertAfter = topmost band; forces WS_EX_TOPMOST z-order (property set pre-Show can be lost).</summary>
+    public static readonly IntPtr HWND_TOPMOST = new(-1);
+
+    /// <summary>PostMessage target = all top-level windows; used to signal an already-running instance to surface.</summary>
+    public static readonly IntPtr HWND_BROADCAST = new(0xffff);
+
+    // ── WM_SIZING (interactive resize loop) ──────────────────────────────
+    public const int WM_SIZING = 0x0214;
+    public const int WMSZ_LEFT = 1;
+    public const int WMSZ_RIGHT = 2;
+    public const int WMSZ_TOP = 3;
+    public const int WMSZ_TOPLEFT = 4;
+    public const int WMSZ_TOPRIGHT = 5;
+    public const int WMSZ_BOTTOM = 6;
+    public const int WMSZ_BOTTOMLEFT = 7;
+    public const int WMSZ_BOTTOMRIGHT = 8;
+
+    /// <summary>AllowSetForegroundWindow dwProcessId wildcard — any process may take the foreground next.</summary>
+    public const int ASFW_ANY = -1;
+
     public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     [DllImport("user32.dll")]
@@ -113,6 +133,17 @@ public static class User32
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>Registers (or returns) a system-wide message id for a string — identical across processes, so a second
+    /// instance and the running one agree on the "surface yourself" signal.</summary>
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern uint RegisterWindowMessage(string lpString);
+
+    /// <summary>Hands the caller's foreground-activation right to another process. Without this the running
+    /// instance's Activate() is foreground-locked and only flashes the taskbar instead of popping the window.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AllowSetForegroundWindow(int dwProcessId);
 
     /// <summary>Top-level window under a screen point.</summary>
     [DllImport("user32.dll")]

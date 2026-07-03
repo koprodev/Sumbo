@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Per-user MSI: no admin/UAC, installs under %LocalAppData%\Programs, per-user Start-menu shortcut and
+     Apps-and-Features entry. Content = the self-contained single-file exe (no .NET prerequisite).
+     Build: wix build installer/Package.wxs -arch x64 -d Version=... -d PublishDir=... -o ....msi -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Sumbo"
+           Manufacturer="koprodev"
+           Version="$(var.Version)"
+           UpgradeCode="1F5C9432-C1A1-4FE9-8AC9-1968BF0DC8FA"
+           Scope="perUser"
+           Language="1033"
+           Compressed="yes">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Sumbo is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="SumboIco" SourceFile="$(var.RepoDir)\assets\sumbo.ico" />
+    <Property Id="ARPPRODUCTICON" Value="SumboIco" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/koprodev/Sumbo" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/koprodev/Sumbo/issues" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsDir" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Sumbo" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <ComponentGroup Id="AppComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExe" Guid="A7D30A61-52E7-4B7E-9C41-3D2E8B6F1C22">
+        <File Id="SumboExe" Source="$(var.PublishDir)\Sumbo.exe" KeyPath="no" />
+        <!-- Per-user components need an HKCU key path — files under the user profile cannot be the key. -->
+        <RegistryValue Root="HKCU" Key="Software\koprodev\Sumbo" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="RemoveProgramsDir" Directory="ProgramsDir" On="uninstall" />
+      </Component>
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="B3F1C8D4-9A26-4E0B-8D57-6C41F2A9E833">
+        <Shortcut Id="SumboStartMenu"
+                  Name="Sumbo"
+                  Description="Mirror any window into a single always-on-top view"
+                  Target="[INSTALLFOLDER]Sumbo.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="SumboIco" />
+        <RegistryValue Root="HKCU" Key="Software\koprodev\Sumbo" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="Main" Level="1">
+      <ComponentGroupRef Id="AppComponents" />
+    </Feature>
+  </Package>
+</Wix>
