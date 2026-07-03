@@ -5,14 +5,14 @@ using System.Linq;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Resolves a saved <see cref="TargetSpec"/> to a live window (FR-13 프로파일 복원, §7.4). Priority:
+/// Resolves a saved <see cref="TargetSpec"/> to a live window. Priority:
 /// <c>processName+title → title → className</c>, then the explicit stored <see cref="TargetSpec.MatchBy"/>
-/// as a last resort. Title matches are partial (contains, case-insensitive) per §7.4; processName/className
-/// are exact. Returns null when nothing matches so the caller can prompt the user (§7.4 미발견 사용자 선택).
-/// <para><see cref="MatchBy.Handle"/> is volatile (§7.4 세션 한정) — a saved handle can't identify a window
+/// as a last resort. Title matches are partial (contains, case-insensitive); processName/className
+/// are exact. Returns null when nothing matches so the caller can prompt the user.
+/// <para><see cref="MatchBy.Handle"/> is volatile — a saved handle can't identify a window
 /// across sessions, so it is intentionally not resolved here; a Handle spec falls through to the captured
 /// identity chain (title / processName / className).</para>
-/// Pure — unit-tested without Win32 (§14.1 matchBy 우선순위).
+/// Pure — unit-tested without Win32.
 /// </summary>
 public static class WindowMatcher
 {
@@ -21,7 +21,7 @@ public static class WindowMatcher
         if (spec is null || windows is null || windows.Count == 0)
             return null;
 
-        // 1. processName + title (both present) — the most specific §7.4 tier.
+        // 1. processName + title (both present) — the most specific tier.
         if (!string.IsNullOrEmpty(spec.CapturedProcessName) && !string.IsNullOrEmpty(spec.CapturedTitle))
         {
             WindowInfo? m = windows.FirstOrDefault(w =>

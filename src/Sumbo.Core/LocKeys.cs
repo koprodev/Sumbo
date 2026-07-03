@@ -1,9 +1,9 @@
 namespace Sumbo.Core;
 
 /// <summary>
-/// Canonical localization key IDs (FR-16 다국어). Code references these <c>const</c>s at compile time while
-/// the translated values live in the embedded <c>lang.{ko,en}.json</c> catalogs — so a translator (or an AI)
-/// edits language JSON alone without touching C#. <see cref="All"/> is the authoritative key set that
+/// Canonical localization key IDs. Code references these <c>const</c>s at compile time while the
+/// translated values live in the embedded <c>lang.{ko,en}.json</c> catalogs — so a translator edits
+/// language JSON alone without touching C#. <see cref="All"/> is the authoritative key set that
 /// <c>LocalizationCatalogTests</c> asserts every language table covers (drift guard).
 /// <para>
 /// Format keys use numbered <c>{0}</c>/<c>{1}</c> placeholders (consumed by
@@ -17,7 +17,7 @@ public static class LocKeys
     // ── App-wide ──
     public const string App_Title = "app.title"; // window title + tray tooltip (brand — same in every language)
 
-    // ── Menu / action labels (v1 컨텍스트 메뉴 승계 — FR-10 미러 우클릭 메뉴 + 패널 버튼 재사용, V2-E2 orphan 정리) ──
+    // ── Menu / action labels (mirror right-click menu; reused by panel buttons) ──
     public const string Menu_Target = "menu.target";
     public const string Menu_Size_Source = "menu.size.source";
     public const string Menu_Size_Half = "menu.size.half";
@@ -65,7 +65,7 @@ public static class LocKeys
 
     // ── Dialogs (main window / mirror shell) ──
     public const string Dialog_CloneFailed_Caption = "dialog.cloneFailed.caption";
-    public const string Dialog_CloneFailed_Body = "dialog.cloneFailed.body"; // v2 [5차] F3: fallback body when the failure carries no message (zero-size source 등)
+    public const string Dialog_CloneFailed_Body = "dialog.cloneFailed.body"; // fallback body when the failure carries no message (e.g. zero-size source)
     public const string Dialog_ClickThroughUnavailable_Body = "dialog.clickThroughUnavailable.body"; // {0} = chord
     public const string Dialog_ClickThroughUnavailable_Caption = "dialog.clickThroughUnavailable.caption";
     public const string Dialog_ClickForwardUnsupported_Body = "dialog.clickForwardUnsupported.body"; // {0} = win32 error
@@ -92,16 +92,16 @@ public static class LocKeys
     public const string Tray_AutoStart = "tray.autoStart";
     public const string Tray_MinimizeToTray = "tray.minimizeToTray";
     public const string Tray_Exit = "tray.exit";
-    public const string Tray_ResidentNotice_Title = "tray.residentNotice.title"; // V2-E3 close→트레이 1회 풍선
+    public const string Tray_ResidentNotice_Title = "tray.residentNotice.title"; // one-time balloon when close hides to tray
     public const string Tray_ResidentNotice_Body = "tray.residentNotice.body";
 
-    // ── Settings panel (V2-E1 설정 창 흡수 — 언어/시작; defaults 그룹 = deferred, V2-E2 [3차]) ──
+    // ── Settings panel (language / startup) ──
     public const string Settings_Section_Language = "settings.section.language";
     public const string Settings_Language_Ko = "settings.language.ko";
     public const string Settings_Language_En = "settings.language.en";
     public const string Settings_Section_Startup = "settings.section.startup";
 
-    // ── Main window (M6 UI 재설계 승계 — V2-E2 v1 잔재 orphan 정리) ──
+    // ── Main window control panel ──
     public const string Main_TargetSection = "main.targetSection";
     public const string Main_SearchPlaceholder = "main.searchPlaceholder";
     public const string Main_StatusRunning = "main.statusRunning";
@@ -114,8 +114,8 @@ public static class LocKeys
     public const string Main_Anchor_Center = "main.anchor.center";
     public const string Main_Display_AlwaysOnTop = "main.display.alwaysOnTop";
     public const string Main_AlwaysOnTop_Off = "main.alwaysOnTop.off";
-    public const string Main_AlwaysOnTop_On = "main.alwaysOnTop.on"; // M6-C 항상 위에 표시 · 켜짐
-    public const string Main_Display_HideUi_Hint = "main.display.hideUi.hint"; // V2-D 오버레이 진입 버튼 하단 힌트 (ESC 복원)
+    public const string Main_AlwaysOnTop_On = "main.alwaysOnTop.on";
+    public const string Main_Display_HideUi_Hint = "main.display.hideUi.hint"; // hint under the hide-UI button (ESC restores)
     public const string Main_Mode_ClickForward_Desc = "main.mode.clickForward.desc";
     public const string Main_Mode_ClickThrough_Desc = "main.mode.clickThrough.desc";
     public const string Main_Mode_Lock_Desc = "main.mode.lock.desc";
@@ -126,27 +126,27 @@ public static class LocKeys
     public const string Main_Nav_Settings = "main.nav.settings";
     public const string Main_Nav_About = "main.nav.about";
 
-    // ── v2 단일 창 셸 (체크리스트v2.md V2-A) ──
-    public const string Main_Nav_Targets = "main.nav.targets";     // rail 대상 창 아이콘 + 대상 패널 제목
-    public const string Main_Nav_Profiles = "main.nav.profiles";   // rail 프로필 아이콘 (패널은 V2-C)
-    public const string Main_StopMirror = "main.stopMirror";       // 대상 패널 하단 미러링 중지 버튼
-    public const string Main_Mirror_Hint = "main.mirror.hint";     // 유휴 캔버스 안내 ({0} = PickWindow chord)
+    // ── Single-window shell ──
+    public const string Main_Nav_Targets = "main.nav.targets";     // rail targets icon + targets panel title
+    public const string Main_Nav_Profiles = "main.nav.profiles";   // rail profiles icon
+    public const string Main_StopMirror = "main.stopMirror";       // stop-mirroring button at the bottom of the targets panel
+    public const string Main_Mirror_Hint = "main.mirror.hint";     // idle canvas hint ({0} = pick-window chord)
 
-    // ── v2 프로필·영역 패널 (체크리스트v2.md V2-C) ──
-    public const string Main_Region_Subtitle = "main.region.subtitle";       // 영역 패널 안내 (드래그 사용법)
-    public const string Main_Region_Current = "main.region.current";         // 현재 영역 readout 라벨
-    public const string Main_Profiles_Subtitle = "main.profiles.subtitle";   // 프로필 패널 안내
-    public const string Main_Item_Apply = "main.item.apply";                 // 저장 목록 행 — 적용 (삭제 버튼은 글리프 전용)
+    // ── Region / profiles panels ──
+    public const string Main_Region_Subtitle = "main.region.subtitle";       // region panel guidance (drag usage)
+    public const string Main_Region_Current = "main.region.current";         // current-region readout label
+    public const string Main_Profiles_Subtitle = "main.profiles.subtitle";   // profiles panel guidance
+    public const string Main_Item_Apply = "main.item.apply";                 // saved-list row apply button (delete button is glyph-only)
     public const string Main_ConfirmDelete_Body = "main.confirmDelete.body"; // {0} = item name
     public const string Main_ConfirmDelete_Caption = "main.confirmDelete.caption";
 
-    // ── v2 잔여 패널 (체크리스트v2.md V2-E1 — 그룹·단축키·설정·About) ──
-    public const string Main_Settings_Subtitle = "main.settings.subtitle";   // 설정 패널 안내
-    public const string Main_Group_Subtitle = "main.group.subtitle";         // 그룹 순환 패널 안내
-    public const string Main_Group_Members = "main.group.members";           // 그룹 멤버 목록 라벨
-    public const string Main_Group_Empty = "main.group.empty";               // 멤버 없음 안내
-    public const string Main_Hotkeys_Subtitle = "main.hotkeys.subtitle";     // 단축키 패널 안내
-    public const string Main_Hotkeys_Conflict = "main.hotkeys.conflict";     // 등록 충돌 표기
+    // ── Group / hotkeys / settings / about panels ──
+    public const string Main_Settings_Subtitle = "main.settings.subtitle";   // settings panel guidance
+    public const string Main_Group_Subtitle = "main.group.subtitle";         // group rotation panel guidance
+    public const string Main_Group_Members = "main.group.members";           // group member list label
+    public const string Main_Group_Empty = "main.group.empty";               // empty-group notice
+    public const string Main_Hotkeys_Subtitle = "main.hotkeys.subtitle";     // hotkeys panel guidance
+    public const string Main_Hotkeys_Conflict = "main.hotkeys.conflict";     // registration-conflict marker
     public const string Main_Hotkey_ToggleVisible = "main.hotkey.toggleVisible";
     public const string Main_Hotkey_PickWindow = "main.hotkey.pickWindow";
     public const string Main_Hotkey_ClickThrough = "main.hotkey.clickThrough";
@@ -154,9 +154,9 @@ public static class LocKeys
     public const string Main_Hotkey_OpacityDown = "main.hotkey.opacityDown";
     public const string Main_Hotkey_RegionSelect = "main.hotkey.regionSelect";
     public const string Main_Hotkey_GroupSwitch = "main.hotkey.groupSwitch";
-    public const string Main_About_Subtitle = "main.about.subtitle";         // 슬로건/설명
-    public const string Main_About_Version = "main.about.version";           // "버전 {0}" ({0}=version)
-    public const string Main_About_UpdateNote = "main.about.updateNote";     // FR-17 자동업데이트 이월 안내
+    public const string Main_About_Subtitle = "main.about.subtitle";         // tagline / description
+    public const string Main_About_Version = "main.about.version";           // "Version {0}" ({0} = version)
+    public const string Main_About_UpdateNote = "main.about.updateNote";     // notice that auto-update is not available yet
 
     /// <summary>Every key above — the authoritative set each language catalog must fully cover.</summary>
     public static readonly string[] All =

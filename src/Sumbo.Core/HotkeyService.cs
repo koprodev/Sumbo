@@ -5,7 +5,7 @@ using Sumbo.Native;
 
 namespace Sumbo.Core;
 
-/// <summary>Global hotkey actions (요건정의서 §6.4).</summary>
+/// <summary>Global hotkey actions.</summary>
 public enum HotkeyAction
 {
     ToggleVisible,
@@ -21,10 +21,9 @@ public enum HotkeyAction
 public sealed record HotkeyBinding(HotkeyAction Action, uint Modifiers, uint Vk, string Display);
 
 /// <summary>
-/// Registers global hotkeys (FR-09, §8.5) for a host window and resolves incoming
-/// <c>WM_HOTKEY</c> ids back to actions. Registration failures (key already held by another app)
-/// are returned so the UI can advise the user to reassign (요건정의서 §6.4 등록 실패 고지).
-/// Use <c>MOD_NOREPEAT</c> so a held chord fires once.
+/// Registers global hotkeys for a host window and resolves incoming <c>WM_HOTKEY</c> ids back to
+/// actions. Registration failures (key already held by another app) are returned so the UI can
+/// advise the user to reassign.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class HotkeyService : IDisposable
@@ -33,7 +32,7 @@ public sealed class HotkeyService : IDisposable
     private const uint VkS = 0x53, VkW = 0x57, VkC = 0x43, VkR = 0x52, VkG = 0x47, VkUp = 0x26, VkDown = 0x28;
     private const uint CtrlAlt = User32.MOD_CONTROL | User32.MOD_ALT;
 
-    /// <summary>Default bindings per §6.4 (사용자 재정의 가능 — App may pass an overridden set).</summary>
+    /// <summary>Default bindings — user-overridable; the App may pass an overridden set instead.</summary>
     public static IReadOnlyList<HotkeyBinding> Defaults { get; } = new[]
     {
         new HotkeyBinding(HotkeyAction.ToggleVisible, CtrlAlt, VkS, "Ctrl+Alt+S"),
@@ -52,7 +51,7 @@ public sealed class HotkeyService : IDisposable
 
     public HotkeyService(IntPtr hwnd) => _hwnd = hwnd;
 
-    /// <summary>Currently registered bindings (excludes ones that failed).</summary>
+    /// <summary>True when the action's hotkey registered successfully (failed bindings are excluded).</summary>
     public bool IsRegistered(HotkeyAction action) => _actionToId.ContainsKey(action);
 
     /// <summary>

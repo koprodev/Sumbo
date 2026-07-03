@@ -6,7 +6,7 @@ using System.Linq;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Pure, UI-independent helpers for the control-panel target list (M6-B): filtering the enumerated windows by a
+/// Pure, UI-independent helpers for the control-panel target list: filtering the enumerated windows by a
 /// search query and deriving their display strings. Kept in Core so the (non-Win32) list logic is unit-testable;
 /// icon loading and the actual <c>WindowEnumerator</c> call stay in the App layer.
 /// </summary>

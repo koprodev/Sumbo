@@ -5,9 +5,9 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A profile tab chip in the center column (디자인샘플.png의 프로필 탭) — a pill with an optional leading glyph and an
-/// optional trailing star for the active profile. Active → blue fill; others → dark card + border. Auto-sizes to its
-/// text. Raises <see cref="Selected"/>. (Bound to <c>ProfileService</c> in M6-D; static placeholders in M6-A.)
+/// Profile tab chip: a pill with an optional leading glyph and an optional trailing star marking the active
+/// profile. Active renders with the accent fill; others as a dark card with border. Measures its own natural
+/// width for the caller's flow layout. Raises <see cref="Selected"/>.
 /// </summary>
 internal sealed class ProfileChip : Control
 {

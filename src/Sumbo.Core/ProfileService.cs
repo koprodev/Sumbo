@@ -7,12 +7,12 @@ using System.Text.Json.Serialization;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Persists clone profiles to <c>profiles.json</c> (FR-13, §7.2). The file path is injected (as with
+/// Persists clone profiles to <c>profiles.json</c>. The file path is injected (as with
 /// <see cref="RegionStore"/>) so the App supplies <c>%AppData%\Sumbo\profiles.json</c> while tests use a
-/// temp path. Wire format matches the §7.2 example exactly — <b>camelCase</b> property names and
-/// <b>string</b> enums (<c>"matchBy":"title"</c>, <c>"anchor":"topRight"</c>) — via
-/// <see cref="JsonNamingPolicy.CamelCase"/> + <see cref="JsonStringEnumConverter"/> (PEER 보완 HIGH).
-/// Writes are atomic (<see cref="AtomicFile"/>).
+/// temp path. Wire format is <b>camelCase</b> property names and <b>string</b> enums
+/// (<c>"matchBy":"title"</c>, <c>"anchor":"topRight"</c>) via <see cref="JsonNamingPolicy.CamelCase"/> +
+/// <see cref="JsonStringEnumConverter"/> — existing stores depend on it. Writes are atomic
+/// (<see cref="AtomicFile"/>).
 /// </summary>
 public sealed class ProfileService
 {

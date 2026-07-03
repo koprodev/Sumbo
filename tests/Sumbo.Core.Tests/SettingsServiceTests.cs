@@ -67,7 +67,7 @@ public class SettingsServiceTests : IDisposable
     {
         string json = SettingsService.Serialize(new Settings());
 
-        // §7.1 wire format: camelCase property names + string enum values.
+        // Wire format: camelCase property names + string enum values.
         Assert.Contains("\"startWithWindows\": false", json);
         Assert.Contains("\"minimizeToTray\": true", json);
         Assert.Contains("\"checkUpdateOnStart\": true", json);
@@ -90,7 +90,7 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public void Load_MissingFile_DefaultsAlwaysOnTopTrue() // M6-C: preserve historical always-on-top
+    public void Load_MissingFile_DefaultsAlwaysOnTopTrue()
         => Assert.True(new SettingsService(_path).Load().Defaults.AlwaysOnTop);
 
     [Fact]
@@ -105,9 +105,9 @@ public class SettingsServiceTests : IDisposable
     [Fact]
     public void Load_LegacyFileWithoutAlwaysOnTop_DefaultsTrue()
     {
-        // Pre-M6-C settings.json has no "alwaysOnTop" key. System.Text.Json constructs SettingsDefaults via its
+        // A settings.json without an "alwaysOnTop" key: System.Text.Json constructs SettingsDefaults via its
         // parameterless ctor (initializer = true runs) and only overwrites keys PRESENT in the JSON, so the missing
-        // key keeps the true initializer — the historical always-on-top behaviour is preserved (M6-C F1, no migration).
+        // key keeps the true initializer — older files stay always-on-top without any migration.
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         File.WriteAllText(_path, "{ \"version\": 1, \"language\": \"en\", \"defaults\": { \"opacity\": 80, \"showBorder\": true } }");
 

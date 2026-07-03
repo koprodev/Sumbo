@@ -7,14 +7,13 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 표시 설정 panel (V2-D 전면 라이브 — v1 M6-C BuildSide/WireDisplaySettings 인벤토리 승계, 대상 = 메인창 내장 미러).
-/// The whole window-control surface is wired: size modes / anchor / opacity / click-forward / click-through / lock /
-/// border / always-on-top drive the MAIN window (v1 CloneForm 창 셸 절반의 재해석), plus the UI 숨기기 (overlay) entry
-/// (v1 <c>_hideAllBtn</c> 재도입 — 체크리스트v2.md §8 ①).
+/// The display-settings panel for the embedded mirror. The whole window-control surface is wired: size modes /
+/// anchor / opacity / click-forward / click-through / lock / border / always-on-top drive the MAIN window, plus the
+/// hide-UI (overlay) entry.
 /// <para>
 /// The panel is a pure view: it raises intent events and the shell routes them to the window/mirror, reflecting the
 /// applied state back via <see cref="ReflectMirror"/> under the <see cref="_syncing"/> guard — every control's
-/// programmatic setter fires its change event (실측), so an unguarded reflect would loop back ([2차] F1, V2-B).
+/// programmatic setter fires its change event, so an unguarded reflect would loop back.
 /// </para>
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -42,36 +41,36 @@ internal sealed class DisplayPanel : PanelView
     private readonly FlatButton _hideUiBtn = new();
     private readonly Label _hideUiHint = new();
 
-    private bool _syncing; // guards the control handlers while ReflectMirror pushes shell → UI (v1 승계)
+    private bool _syncing; // guards the control handlers while ReflectMirror pushes shell → UI
     private bool _aot = true; // reflected AOT state — drives the button caption (ApplyStrings/ReflectMirror)
 
     /// <summary>User moved the opacity slider (percent, 10~100). Shell route: ApplyOpacity → mirror + reflect.</summary>
     public event EventHandler<int>? OpacityChangeRequested;
 
-    /// <summary>User flipped the 테두리 표시 toggle. Shell route: canvas ring on/off + reflect.</summary>
+    /// <summary>User flipped the border toggle. Shell route: canvas ring on/off + reflect.</summary>
     public event EventHandler<bool>? BorderToggleRequested;
 
-    /// <summary>User picked a size segment — 0 원본 / 1 ½ / 2 ¼ / 3 전체화면 (FR-03). Shell maps to
-    /// <see cref="ClientSizeMode"/> / maximize; a clamped apply reflects back as no selection ([2차] F1).</summary>
+    /// <summary>User picked a size segment — 0 source / 1 half / 2 quarter / 3 fullscreen. Shell maps to
+    /// <see cref="ClientSizeMode"/> / maximize; a clamped apply reflects back as no selection.</summary>
     public event EventHandler<int>? SizeModeSelected;
 
-    /// <summary>User picked an anchor cell — <see cref="AnchorGrid"/> index 0 해제, 1..9 = TL,T,TR,L,C,R,BL,B,BR
-    /// (FR-04). The shell maps to <see cref="SnapAnchor"/>?.</summary>
+    /// <summary>User picked an anchor cell — <see cref="AnchorGrid"/> index 0 = none, 1..9 = TL,T,TR,L,C,R,BL,B,BR.
+    /// The shell maps to <see cref="SnapAnchor"/>?.</summary>
     public event EventHandler<int>? AnchorSelected;
 
-    /// <summary>FR-06 클릭 전달 toggle (desired state, not a flip — idempotent under reflect, v1 M6-C F2 승계).</summary>
+    /// <summary>Click-forward toggle (desired state, not a flip — idempotent under reflect).</summary>
     public event EventHandler<bool>? ClickForwardToggleRequested;
 
-    /// <summary>FR-07 클릭 통과 toggle. The shell's single route guards/undoes it ([2차] F3).</summary>
+    /// <summary>Click-through toggle. The shell's single route guards/undoes it.</summary>
     public event EventHandler<bool>? ClickThroughToggleRequested;
 
-    /// <summary>FR-15 위치·크기 잠금 toggle.</summary>
+    /// <summary>Position/size lock toggle.</summary>
     public event EventHandler<bool>? LockToggleRequested;
 
-    /// <summary>항상 위에 표시 button click — the shell flips and reflects the applied state back.</summary>
+    /// <summary>Always-on-top button click — the shell flips and reflects the applied state back.</summary>
     public event EventHandler? AotToggleRequested;
 
-    /// <summary>UI 숨기기 (overlay) entry — v1 <c>_hideAllBtn</c> 재도입 (§8 ①). ESC/tray/Ctrl+Alt+C restore.</summary>
+    /// <summary>Hide-UI (overlay) entry. ESC / tray / Ctrl+Alt+C restore.</summary>
     public event EventHandler? HideUiRequested;
 
     public DisplayPanel(LocalizationCatalog loc)
@@ -95,7 +94,7 @@ internal sealed class DisplayPanel : PanelView
 
         _sizeLabel.BackColor = Theme.PanelBg; _sizeLabel.ForeColor = Theme.TextSecondary; _sizeLabel.Font = Theme.H2;
         _sizeLabel.AutoSize = false; _sizeLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _sizeSeg.SelectedIndex = -1; // free size until a preset applies (M6-C "no preset" 시맨틱)
+        _sizeSeg.SelectedIndex = -1; // free size until a preset applies
 
         _anchorLabel.BackColor = Theme.PanelBg; _anchorLabel.ForeColor = Theme.TextSecondary; _anchorLabel.Font = Theme.H2;
         _anchorLabel.AutoSize = false; _anchorLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -108,7 +107,7 @@ internal sealed class DisplayPanel : PanelView
         _opacitySlider.Value = 100;
         _opacityValue.Text = "100%";
 
-        _rowBorder.Toggle.Checked = true; // matches the V2-A canvas ring (initial ON)
+        _rowBorder.Toggle.Checked = true; // matches the canvas ring's initial ON state
 
         _aotLabel.BackColor = Theme.PanelBg; _aotLabel.ForeColor = Theme.TextPrimary; _aotLabel.Font = Theme.BodySemi;
         _aotLabel.AutoSize = false; _aotLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -119,7 +118,7 @@ internal sealed class DisplayPanel : PanelView
         _hideUiHint.BackColor = Theme.PanelBg; _hideUiHint.ForeColor = Theme.TextMuted; _hideUiHint.Font = Theme.Small;
         _hideUiHint.AutoSize = false; _hideUiHint.TextAlign = ContentAlignment.MiddleLeft;
 
-        // V2-D live wiring — every handler is _syncing-guarded because programmatic setters raise the same events.
+        // State handlers guard on _syncing because programmatic reflect setters re-raise the same events as user input; the Click handlers below need no guard (a setter never fires Click).
         _opacitySlider.ValueChanged += (_, _) =>
         {
             _opacityValue.Text = _opacitySlider.Value + "%"; // label tracks the slider even during a reflect
@@ -187,7 +186,7 @@ internal sealed class DisplayPanel : PanelView
         Controls.Add(_hideUiHint);
     }
 
-    /// <summary>Maps a <see cref="SnapAnchor"/>? to the <see cref="AnchorGrid"/> cell index (0 해제).</summary>
+    /// <summary>Maps a <see cref="SnapAnchor"/>? to the <see cref="AnchorGrid"/> cell index (0 = none).</summary>
     private static int AnchorToIndex(SnapAnchor? anchor) => anchor switch
     {
         SnapAnchor.TopLeft => 1,
@@ -203,9 +202,9 @@ internal sealed class DisplayPanel : PanelView
     };
 
     /// <summary>Shell → panel: pushes the applied window/mirror state into the live controls under the reentry
-    /// guard. With no live mirror the surface is disabled so the user can't drive settings that have no target
-    /// (v1 RefreshDisplaySettings 승계); size/anchor also lock out while FR-15 잠금 is on (v1 OnMenuOpening 승계),
-    /// and 통과 needs the escape hotkey alive (<paramref name="clickThroughAvailable"/> — CloneManager guard).</summary>
+    /// guard. With no live mirror the surface is disabled so the user can't drive settings that have no target;
+    /// size/anchor also lock out while the position/size lock is on, and click-through needs the escape hotkey
+    /// alive (<paramref name="clickThroughAvailable"/>).</summary>
     public void ReflectMirror(bool hasMirror, MirrorViewState state, bool clickThroughAvailable)
     {
         _syncing = true;
@@ -219,7 +218,7 @@ internal sealed class DisplayPanel : PanelView
                     ClientSizeMode.Source => 0,
                     ClientSizeMode.Half => 1,
                     ClientSizeMode.Quarter => 2,
-                    _ => -1, // free/custom size ([2차] F1 — clamped preset reflects as no selection)
+                    _ => -1, // free/custom size — a clamped preset reflects as no selection
                 };
             _anchorGrid.SelectedIndex = AnchorToIndex(state.Anchor);
             _opacitySlider.Value = state.OpacityPercent;
@@ -234,11 +233,11 @@ internal sealed class DisplayPanel : PanelView
             _sizeSeg.Enabled = hasMirror && !state.Locked;
             _anchorGrid.Enabled = hasMirror && !state.Locked;
             _opacitySlider.Enabled = hasMirror;
-            _rowForward.SetRowEnabled(hasMirror && !state.ClickThrough); // 상호배타 시각화 (v1 :729)
+            _rowForward.SetRowEnabled(hasMirror && !state.ClickThrough); // mutually exclusive with click-through
             _rowThrough.SetRowEnabled(hasMirror && clickThroughAvailable);
             _rowLock.SetRowEnabled(hasMirror);
             _rowBorder.SetRowEnabled(hasMirror);
-            _hideUiBtn.Enabled = hasMirror; // 오버레이 = 미러 감상 모드 — 빈 캔버스 숨김은 무의미
+            _hideUiBtn.Enabled = hasMirror; // the overlay is a mirror-viewing mode — hiding an empty canvas is pointless
         }
         finally
         {
@@ -275,7 +274,7 @@ internal sealed class DisplayPanel : PanelView
         _hideUiHint.Text = loc.Get(LocKeys.Main_Display_HideUi_Hint);
     }
 
-    // ── Layout ── (v1 LayoutSide metrics minus the shell-owned header; AutoScroll keeps short windows usable)
+    // ── Layout ──
 
     protected override void OnLayout(LayoutEventArgs levent)
     {
@@ -331,8 +330,7 @@ internal sealed class DisplayPanel : PanelView
     }
 }
 
-/// <summary>A settings toggle row (label + description + <see cref="ToggleSwitch"/>) used in the 표시 설정 panel
-/// (v1 원형 이식).</summary>
+/// <summary>A settings toggle row: label + description + <see cref="ToggleSwitch"/>.</summary>
 [SupportedOSPlatform("windows")]
 internal sealed class ModeRow : Panel
 {
@@ -355,7 +353,7 @@ internal sealed class ModeRow : Panel
 
     public void SetText(string label, string desc) { _label.Text = label; _desc.Text = desc; }
 
-    /// <summary>이월 ② ([2차] F5): disables the toggle and mutes the label together. The row itself stays Enabled —
+    /// <summary>Disables the toggle and mutes the label together. The row itself stays Enabled —
     /// cascading Enabled=false onto the standard Labels would trigger WinForms' etched disabled text rendering,
     /// which fights the dark theme; muting the ForeColor keeps the palette consistent.</summary>
     public void SetRowEnabled(bool on)

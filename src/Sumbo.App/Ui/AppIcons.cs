@@ -7,10 +7,9 @@ using System.Runtime.Versioning;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// Loads the branded multi-size icon (assets/sumbo.ico) from the embedded resource, so single-file publish
-/// needs no on-disk asset and the tray gets a crisp small frame instead of a downscaled 32px one. Each call
-/// returns a NEW <see cref="Icon"/> the caller owns and must dispose (TrayHost keeps a field released after
-/// the NotifyIcon; MainWindow releases in OnFormClosed).
+/// Loads the multi-size app icon from the embedded resource, so single-file publish needs no on-disk asset and
+/// small surfaces (tray) get a crisp native frame instead of a downscaled one. Each call returns a NEW
+/// <see cref="Icon"/> that the caller owns and must dispose.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal static class AppIcons

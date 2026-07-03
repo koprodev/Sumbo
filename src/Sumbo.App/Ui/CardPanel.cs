@@ -5,9 +5,8 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A rounded, optionally bordered container card (디자인샘플.png의 카드 표면). Owner-draws a rounded fill so the
-/// corners blend into <see cref="CornerBack"/> (the surface the card sits on), then hosts child controls normally.
-/// Used for the left target list, the preview frame, the quick-action / status blocks and the settings sections.
+/// Rounded, optionally bordered container card. Owner-draws a rounded fill so the corners blend into
+/// <see cref="CornerBack"/> (the surface the card sits on), then hosts child controls normally.
 /// </summary>
 internal class CardPanel : Panel
 {

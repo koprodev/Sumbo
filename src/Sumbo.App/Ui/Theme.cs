@@ -5,12 +5,12 @@ using System.Drawing.Drawing2D;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// Central design tokens (colors / fonts / metrics) for the M6 control-panel UI (디자인샘플.png). Single source
-/// of truth so every custom-drawn control (<see cref="CardPanel"/>, <see cref="IconRail"/>, toggles, …) shares
-/// one palette — the mockup is a dark, rounded, blue-accented dashboard, so the values below encode that theme.
+/// Central design tokens (colors / fonts / metrics) for the control-panel UI. Single source of truth so every
+/// custom-drawn control (<see cref="CardPanel"/>, <see cref="IconRail"/>, toggles, …) shares one palette —
+/// a dark, rounded, blue-accented dashboard theme.
 /// <para>
 /// Icons use the <b>Segoe Fluent Icons</b> / <b>Segoe MDL2 Assets</b> system font (present on Windows 10+), so the
-/// pixel-faithful glyphs ship with the OS rather than as embedded assets. <see cref="Glyph"/> holds the code points.
+/// glyphs ship with the OS rather than as embedded assets. <see cref="Glyph"/> holds the code points.
 /// </para>
 /// </summary>
 internal static class Theme
@@ -112,7 +112,7 @@ internal static class Theme
 
     public static void DrawRounded(Graphics g, Rectangle r, int radius, Color border, int thickness = 1)
     {
-        // Inset by half the pen width so the stroke stays inside the bounds (no clipped edge).
+        // Shrink width/height by 1px so the far edge stays in bounds: GDI+ draws a Rectangle's outer edge at X+Width.
         var rr = new Rectangle(r.X, r.Y, r.Width - 1, r.Height - 1);
         using GraphicsPath path = RoundedRect(rr, radius);
         using var pen = new Pen(border, thickness);
@@ -129,8 +129,8 @@ internal static class Theme
     }
 }
 
-/// <summary>Segoe Fluent Icons / MDL2 Assets code points used by the shell (Private-Use-Area, given as
-/// <c>\uXXXX</c> escapes for encoding stability).</summary>
+/// <summary>Segoe Fluent Icons / MDL2 Assets code points used by the shell, stored as literal
+/// Private-Use-Area glyph characters.</summary>
 internal static class Glyph
 {
     public const string Search = "";       // magnifier
@@ -145,7 +145,7 @@ internal static class Glyph
     public const string Maximize = "";
     public const string Restore = "";
     public const string Play = "";         // ▶ mirror start
-    public const string Hide = "";         // eye-off (UI 숨기기)
+    public const string Hide = "";         // eye-off (hide UI)
     public const string Frame = "";        // full-screen / window frame
     public const string Star = "";         // filled star (active profile)
     public const string Settings = "";     // gear

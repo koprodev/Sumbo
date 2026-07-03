@@ -57,10 +57,7 @@ public enum DwmThumbnailFlags : uint
     SourceClientAreaOnly = 0x00000010,
 }
 
-/// <summary>
-/// DWM_THUMBNAIL_PROPERTIES. Win32 BOOL fields are marshalled as 4-byte BOOL
-/// via <see cref="UnmanagedType.Bool"/> (PEER 보완 B).
-/// </summary>
+/// <summary>DWM_THUMBNAIL_PROPERTIES. Win32 BOOL fields marshal as 4-byte BOOL via <see cref="UnmanagedType.Bool"/>.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct DWM_THUMBNAIL_PROPERTIES
 {

@@ -8,7 +8,7 @@ namespace Sumbo.Core;
 /// Owns the lifecycle of a single DWM thumbnail (register → update → unregister).
 /// <para>
 /// Both the destination and source handles MUST be top-level windows; passing a
-/// child control handle returns E_INVALIDARG (PEER 보완 A). The destination is the
+/// child control handle returns E_INVALIDARG. The destination is the
 /// top-level host window; the visible region is set via <see cref="UpdateDestination"/>.
 /// </para>
 /// </summary>
@@ -55,7 +55,7 @@ public sealed class ThumbnailSession : IDisposable
     /// <summary>
     /// Renders the clone into <paramref name="destination"/> (destination-window coordinates).
     /// When <paramref name="source"/> is supplied, only that sub-rectangle of the source window
-    /// is shown (FR-02 영역 선택, <c>DWM_TNP_RECTSOURCE</c>); otherwise the full window is shown.
+    /// is shown (<c>DWM_TNP_RECTSOURCE</c>); otherwise the full window is shown.
     /// </summary>
     public void UpdateDestination(RECT destination, RECT? source = null, byte opacity = 255, bool visible = true)
     {

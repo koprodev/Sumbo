@@ -100,7 +100,7 @@ public class LocalizationCatalogTests : IDisposable
     }
 
     [Fact]
-    public void Load_UnsupportedLanguage_StartsOnNormalizedDefault() // FR-16 F1
+    public void Load_UnsupportedLanguage_StartsOnNormalizedDefault()
     {
         LocalizationCatalog catalog = LocalizationCatalog.Load("ja", null);
 
@@ -121,7 +121,7 @@ public class LocalizationCatalogTests : IDisposable
     }
 
     [Fact]
-    public void Format_MalformedOverridePlaceholder_DoesNotThrow() // F2
+    public void Format_MalformedOverridePlaceholder_DoesNotThrow()
     {
         Directory.CreateDirectory(_dir);
         // Valid JSON, but the value carries a broken format placeholder ("{0" is never closed).

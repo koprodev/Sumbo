@@ -6,8 +6,8 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A horizontal value slider (디자인샘플.png의 불투명도 슬라이더) — inset track, blue filled portion, white knob.
-/// Draggable; raises <see cref="ValueChanged"/>. Range is <see cref="Minimum"/>..<see cref="Maximum"/>.
+/// Horizontal value slider: inset track, accent-filled portion, white knob. Draggable; raises
+/// <see cref="ValueChanged"/>. Range is <see cref="Minimum"/>..<see cref="Maximum"/>.
 /// </summary>
 internal sealed class SliderControl : Control
 {
@@ -52,7 +52,7 @@ internal sealed class SliderControl : Control
     protected override void OnMouseMove(MouseEventArgs e) { if (_dragging) SetFromX(e.X); base.OnMouseMove(e); }
     protected override void OnMouseUp(MouseEventArgs e) { _dragging = false; base.OnMouseUp(e); }
 
-    // V2-D 이월 ②: the owner-drawn surface must reflect Enabled itself (no system disabled rendering).
+    // Owner-drawn surface must repaint on Enabled changes; there is no system disabled rendering.
     protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -61,7 +61,7 @@ internal sealed class SliderControl : Control
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-        Color accent = Enabled ? Theme.Accent : Theme.AccentSoft; // 이월 ②: dim the filled portion + knob ring
+        Color accent = Enabled ? Theme.Accent : Theme.AccentSoft; // disabled dims the filled portion + knob ring
         int cy = Height / 2;
         var full = new Rectangle(TrackLeft, cy - Track / 2, TrackWidth, Track);
         using (GraphicsPath path = Theme.RoundedRect(full, Track / 2))

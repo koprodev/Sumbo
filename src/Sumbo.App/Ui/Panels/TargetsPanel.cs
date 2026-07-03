@@ -8,12 +8,12 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 대상 창 panel (V2-A flow, extracted into the V2-B panel framework): search box filtering a cached
-/// enumeration, refresh, the target-card list and the stop button. The panel is a pure view — a card click raises
-/// <see cref="TargetActivated"/> and the SHELL decides whether to start/keep the mirror, then reflects the outcome
-/// back through <see cref="ReflectMirror"/> (an optimistic card self-select is undone here).
+/// The target-window panel: search box filtering a cached enumeration, refresh, the target-card list and the stop
+/// button. The panel is a pure view — a card click raises <see cref="TargetActivated"/> and the SHELL decides
+/// whether to start/keep the mirror, then reflects the outcome back through <see cref="ReflectMirror"/> (an
+/// optimistic card self-select is undone here).
 /// <para>
-/// Ownership ([2차] F2): this panel owns the <see cref="WindowIconProvider"/>; cards hold image references only.
+/// Ownership: this panel owns the <see cref="WindowIconProvider"/>; cards hold image references only.
 /// <see cref="Dispose(bool)"/> therefore unhooks + disposes the cards FIRST and the provider LAST.
 /// </para>
 /// </summary>
@@ -30,7 +30,7 @@ internal sealed class TargetsPanel : PanelView
     private readonly FlatButton _stopBtn = new();
     private readonly WindowIconProvider _iconProvider = new();
     // Last enumeration result — the search box filters this cached list rather than re-enumerating per keystroke;
-    // only ReloadTargets (initial / refresh / PickWindow hotkey) re-runs the Win32 enumeration (v1 F2 승계).
+    // only ReloadTargets (initial / refresh / PickWindow hotkey) re-runs the Win32 enumeration.
     private readonly List<WindowInfo> _allTargets = new();
     private bool _loaded;
 
@@ -41,7 +41,7 @@ internal sealed class TargetsPanel : PanelView
     /// <summary>Card click on a real target. The shell decides start / retarget / keep (same-handle guard).</summary>
     public event EventHandler<WindowInfo>? TargetActivated;
 
-    /// <summary>미러링 중지 button.</summary>
+    /// <summary>Stop-mirror button.</summary>
     public event EventHandler? StopRequested;
 
     public TargetsPanel(LocalizationCatalog loc)
@@ -56,7 +56,7 @@ internal sealed class TargetsPanel : PanelView
         _searchInput.BackColor = Theme.InsetBg;
         _searchInput.ForeColor = Theme.TextPrimary;
         _searchInput.Font = Theme.Body;
-        _searchInput.TextChanged += (_, _) => ApplyFilter(); // filter the cached list only, no re-enumeration (F2 승계)
+        _searchInput.TextChanged += (_, _) => ApplyFilter(); // filter the cached list only, no re-enumeration
         _searchBox.Controls.Add(_searchInput);
 
         _refreshBtn.Kind = ButtonKind.Ghost;
@@ -64,7 +64,7 @@ internal sealed class TargetsPanel : PanelView
         _refreshBtn.GlyphSize = 12f;
         _refreshBtn.CornerBack = Theme.PanelBg;
         _refreshBtn.Size = new Size(30, 30);
-        _refreshBtn.Click += (_, _) => ReloadTargets(); // re-enumerate
+        _refreshBtn.Click += (_, _) => ReloadTargets();
 
         _targetList.BackColor = Theme.PanelBg;
         _targetList.ClientSizeChanged += (_, _) => LayoutCards(); // scrollbar appearing shrinks the client width
@@ -91,7 +91,7 @@ internal sealed class TargetsPanel : PanelView
     }
 
     /// <summary>Re-enumerates cloneable windows into the cached list, then rebuilds the filtered cards. This is the
-    /// only path that runs the Win32 enumeration — refresh button, first show and the PickWindow hotkey (F2 승계).</summary>
+    /// only path that runs the Win32 enumeration — refresh button, first show and the PickWindow hotkey.</summary>
     public void ReloadTargets()
     {
         _allTargets.Clear();
@@ -127,7 +127,7 @@ internal sealed class TargetsPanel : PanelView
     }
 
     /// <summary>
-    /// Rebuilds the target cards from the cached enumeration filtered by the search box. No auto-select (V2-A 승계):
+    /// Rebuilds the target cards from the cached enumeration filtered by the search box. No auto-select:
     /// selecting a card STARTS the real mirror, so the card matching the live mirror is re-marked instead.
     /// </summary>
     private void ApplyFilter()
@@ -172,7 +172,7 @@ internal sealed class TargetsPanel : PanelView
     }
 
     /// <summary>Unhooks + disposes the cards and empties the list. Card images stay alive — they belong to
-    /// <see cref="_iconProvider"/> (F2 ownership).</summary>
+    /// <see cref="_iconProvider"/>.</summary>
     private void ClearCards()
     {
         foreach (TargetCard card in _cards)
@@ -184,7 +184,7 @@ internal sealed class TargetsPanel : PanelView
         _cards.Clear();
     }
 
-    // ── Layout ── (metrics carried over 1:1 from the V2-A inline view)
+    // ── Layout ──
 
     protected override void OnLayout(LayoutEventArgs levent)
     {
@@ -217,7 +217,7 @@ internal sealed class TargetsPanel : PanelView
         }
     }
 
-    /// <summary>[2차] F2 dispose contract: cards (image referencers) go first, the provider (image owner) last.</summary>
+    /// <summary>Dispose ordering: cards (image referencers) go first, the provider (image owner) last.</summary>
     protected override void Dispose(bool disposing)
     {
         if (disposing)

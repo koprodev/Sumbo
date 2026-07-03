@@ -7,15 +7,14 @@ using System.Text.Json;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Runtime string catalog for FR-16 다국어 (한국어/영어 리소스 분리 + 런타임 전환, §5.2). Keyed by
+/// Runtime string catalog for the localized (ko/en) UI with runtime language switching. Keyed by
 /// <see cref="LocKeys"/> IDs; values come from per-language JSON tables. The catalog is an injected instance
 /// (no static/framework culture probing) so it composes with the app's DI convention and stays test-isolated.
 /// <para>
-/// <b>Loading (임베디드 + 외부 오버라이드).</b> <see cref="Load"/> reads the base <c>lang.{lang}.json</c>
-/// embedded in this assembly (so it ships inside the single-file publish, §11.3 — no satellite/loose files),
-/// then merges any <c>{externalDir}\{lang}.json</c> over it key-by-key. This lets a translator/AI edit or
-/// override language JSON post-deploy without a rebuild, while a corrupt/missing override falls back to the
-/// embedded default.
+/// <b>Loading.</b> <see cref="Load"/> reads the base <c>lang.{lang}.json</c> embedded in this assembly
+/// (so it ships inside the single-file publish — no satellite/loose files), then merges any
+/// <c>{externalDir}\{lang}.json</c> over it key-by-key. This lets a translator edit or override language
+/// JSON post-deploy without a rebuild, while a corrupt/missing override falls back to the embedded default.
 /// </para>
 /// <para>
 /// <b>Runtime switch.</b> <see cref="SetLanguage"/> swaps the active language and raises
@@ -27,14 +26,14 @@ public sealed class LocalizationCatalog
 {
     public const string DefaultLanguage = "ko";
 
-    // Supported UI languages (FR-16 = 한국어/영어). Kept ordinal + explicit; extend by adding an embedded table.
+    // Supported UI languages. Kept ordinal + explicit; extend by adding an embedded table.
     private static readonly string[] SupportedLanguages = { "ko", "en" };
 
     // lang -> (key -> value). Read-only after construction.
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> _tables;
     private string _language;
 
-    /// <summary>Raised after the active language changes (runtime switch, FR-16). UI re-labels on this.</summary>
+    /// <summary>Raised after the active language changes at runtime. UI re-labels on this.</summary>
     public event EventHandler? LanguageChanged;
 
     public LocalizationCatalog(
@@ -48,10 +47,10 @@ public sealed class LocalizationCatalog
     /// <summary>The active (already-normalized) language code.</summary>
     public string Language => _language;
 
-    /// <summary>The UI languages the app offers (FR-16 = ko/en).</summary>
+    /// <summary>The UI languages the app offers.</summary>
     public static IReadOnlyList<string> AvailableLanguages => SupportedLanguages;
 
-    /// <summary>Coerces an arbitrary/persisted value to a supported language, else the default (FR-16 F1).</summary>
+    /// <summary>Coerces an arbitrary/persisted value to a supported language, else the default.</summary>
     public static string Normalize(string? language)
     {
         if (language is not null)
@@ -101,7 +100,7 @@ public sealed class LocalizationCatalog
         catch (FormatException)
         {
             // A malformed placeholder in an external override (valid JSON, broken "{0" etc.) must not crash the
-            // UI from a dialog/menu path — degrade to the raw template rather than throwing (F2).
+            // UI from a dialog/menu path — degrade to the raw template rather than throwing.
             return template;
         }
     }

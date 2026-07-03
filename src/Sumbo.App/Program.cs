@@ -14,9 +14,9 @@ internal static class Program
         // Applies HighDpiMode (PerMonitorV2) from the .csproj — source-generated.
         ApplicationConfiguration.Initialize();
 
-        // Load settings + build the localization catalog first (FR-16), so even the startup DWM dialog is
-        // localized. Settings are loaded once here and injected down (Program → context → manager) rather than
-        // re-loaded, and the language JSON honours an optional %AppData%\Sumbo\lang override.
+        // Load settings and build the localization catalog before anything else so even the startup DWM
+        // dialog is localized. Both are created once here and injected downward; the language JSON honours
+        // an optional %AppData%\Sumbo\lang override.
         string appDataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sumbo");
         var settingsService = new SettingsService(Path.Combine(appDataDir, "settings.json"));
@@ -24,9 +24,8 @@ internal static class Program
         LocalizationCatalog localization = LocalizationCatalog.Load(
             settings.Language, Path.Combine(appDataDir, "lang"));
 
-        // DWM composition is a hard prerequisite (§13). Guard at startup and exit rather than
-        // launching an unusable window — the "실행 불가" notice must not be followed by the app
-        // continuing to run (PEER 보완 — guard/표시 충돌 제거).
+        // DWM composition is a hard startup prerequisite: guard here and exit instead of launching an
+        // unusable window.
         if (!Dwm.IsCompositionEnabled())
         {
             MessageBox.Show(
@@ -37,8 +36,8 @@ internal static class Program
             return;
         }
 
-        // FR-12 다중복제: a context (not a single form) owns the clone set + shared global hotkeys,
-        // so the app outlives any individual clone window and exits when the last one closes.
+        // An ApplicationContext (not a form) owns the app lifetime: the main window can retire to the
+        // tray on close, so the message loop must end only on a real exit.
         Application.Run(new SumboAppContext(settingsService, settings, localization, appDataDir));
     }
 }

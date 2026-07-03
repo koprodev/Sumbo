@@ -8,13 +8,13 @@ using Sumbo.Core;
 namespace Sumbo.App;
 
 /// <summary>
-/// The system-tray presence (FR-14, §6.1 트레이 메뉴). Owns a single process-wide <see cref="NotifyIcon"/> so
-/// the app stays reachable while the main window is hidden/minimized (V2-E3 트레이 상주 정책의 진입점). The icon
-/// is present for the whole app lifetime — there is always a way back (double-click / 표시), so the hidden
-/// window can never be stranded (PEER R3). Surface actions ride <see cref="CloneManager.RequestSurface"/>
-/// (the manager stays UI-agnostic); exit and the setting toggles are delegated to <see cref="CloneManager"/>.
+/// The system-tray presence. Owns a single process-wide <see cref="NotifyIcon"/> so the app stays reachable
+/// while the main window is hidden/minimized. The icon is present for the whole app lifetime — there is
+/// always a way back (double-click / show), so the hidden window can never be stranded. Surface actions ride
+/// <see cref="CloneManager.RequestSurface"/> (the manager stays UI-agnostic); exit and the setting toggles
+/// are delegated to <see cref="CloneManager"/>.
 /// <para>
-/// FR-16: menu captions + tooltip come from the shared <see cref="LocalizationCatalog"/>. As a long-lived
+/// Menu captions + tooltip come from the shared <see cref="LocalizationCatalog"/>. As a long-lived
 /// singleton the tray subscribes directly to <see cref="LocalizationCatalog.LanguageChanged"/> and re-labels
 /// itself on a runtime switch (unsubscribing in <see cref="Dispose"/>).
 /// </para>
@@ -25,7 +25,7 @@ internal sealed class TrayHost : IDisposable
     private readonly CloneManager _manager;
     private readonly LocalizationCatalog _localization;
     private readonly NotifyIcon _icon;
-    private readonly Icon _brandIcon;       // AppIcons.Load 소유권 — Dispose 에서 NotifyIcon 뒤에 해제 ([5차] 조건 3)
+    private readonly Icon _brandIcon;       // owned here; disposed after the NotifyIcon that references it
     private readonly ContextMenuStrip _menu;
     private readonly ToolStripMenuItem _toggleVisibleItem;
     private readonly ToolStripMenuItem _autoStartItem;
@@ -54,7 +54,7 @@ internal sealed class TrayHost : IDisposable
         _menu.Items.Add(_exitItem);
         _menu.Opening += (_, _) => RefreshChecks();
 
-        // 브랜드 아이콘 (배포 cycle, assets/sumbo.ico embedded) — 시스템 small icon 크기로 로드해 16px 프레임 선명도 확보.
+        // Load the brand icon at the system small-icon size so the 16px frame renders sharp in the tray.
         _brandIcon = AppIcons.Load(SystemInformation.SmallIconSize.Width);
         _icon = new NotifyIcon
         {
@@ -63,15 +63,13 @@ internal sealed class TrayHost : IDisposable
             Visible = true,
             ContextMenuStrip = _menu,
         };
-        // V2 단일 창: "restore" means the main window ([5차] F1 — SurfaceRequest 단일 경로, V2-E2 분기 소멸).
         _icon.DoubleClick += (_, _) => _manager.RequestSurface(SurfaceRequest.Restore);
 
-        _localization.LanguageChanged += OnLanguageChanged; // FR-16 runtime relabel (unsubscribed in Dispose)
-        _manager.TrayResidencyNoticeRequested += OnTrayResidencyNotice; // V2-E3 close→트레이 1회 풍선 (Q1 채택)
+        _localization.LanguageChanged += OnLanguageChanged; // runtime relabel (unsubscribed in Dispose)
+        _manager.TrayResidencyNoticeRequested += OnTrayResidencyNotice; // one-time close-to-tray balloon
     }
 
-    // 표시/숨김 targets the main window, sharing the ToggleVisible hotkey's tray hide/restore meaning
-    // (V2-E3 트레이 상주 — 숨김 = 트레이 잔류, 복원 = Visible+Normal).
+    // Same meaning as the ToggleVisible hotkey: hide leaves the window resident in the tray, restore = Visible+Normal.
     private void ToggleVisible() => _manager.RequestSurface(SurfaceRequest.ToggleVisible);
 
     // The window owns the once-per-session gate; this just renders the balloon on the always-alive icon.
@@ -115,10 +113,10 @@ internal sealed class TrayHost : IDisposable
     public void Dispose()
     {
         _manager.TrayResidencyNoticeRequested -= OnTrayResidencyNotice;
-        _localization.LanguageChanged -= OnLanguageChanged; // FR-16 — release the catalog subscription (T-11 누수 방지)
+        _localization.LanguageChanged -= OnLanguageChanged; // the catalog outlives the tray — unsubscribe to avoid a leak
         _icon.Visible = false; // remove the tray icon immediately (else it lingers until the mouse hovers it)
         _icon.Dispose();
-        _brandIcon.Dispose(); // NotifyIcon 이 참조를 놓은 뒤 원본 Icon 해제
+        _brandIcon.Dispose(); // only after the NotifyIcon has released its reference to the Icon
         _menu.Dispose();
     }
 }

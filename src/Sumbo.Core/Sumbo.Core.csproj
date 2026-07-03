@@ -12,12 +12,11 @@
     <ProjectReference Include="..\Sumbo.Native\Sumbo.Native.csproj" />
   </ItemGroup>
 
-  <!-- FR-16 다국어: language catalogs embedded into the assembly so they ship inside the single-file
-       publish (§11.3) — no satellite/loose files. An external %AppData%\Sumbo\lang\{lang}.json overrides
-       these at runtime (LocalizationCatalog.Load). -->
-  <!-- WithCulture=false + explicit LogicalName: the ".ko"/".en" filename sub-extension is a valid culture code,
-       so the SDK would otherwise route these into ko\/en\ satellite assemblies (breaking single-file publish
-       and the main-assembly manifest lookup). Force neutral embedding into Sumbo.Core.dll instead. -->
+  <!-- Language catalogs are embedded so they ship inside the single-file publish (no loose files).
+       An external %AppData%\Sumbo\lang\{lang}.json overrides them at runtime. -->
+  <!-- WithCulture=false + explicit LogicalName: the ".ko"/".en" filename sub-extension is a valid culture
+       code, so the SDK would otherwise route these into satellite assemblies (breaking single-file publish
+       and the main-assembly manifest lookup). Force neutral embedding instead. -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\lang.ko.json" WithCulture="false" LogicalName="Sumbo.Core.lang.ko.json" />
     <EmbeddedResource Include="Resources\lang.en.json" WithCulture="false" LogicalName="Sumbo.Core.lang.en.json" />

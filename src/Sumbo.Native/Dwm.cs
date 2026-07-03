@@ -31,7 +31,7 @@ public static class Dwm
     [DllImport(DwmApi, PreserveSig = true)]
     public static extern int DwmIsCompositionEnabled([MarshalAs(UnmanagedType.Bool)] out bool enabled);
 
-    /// <summary>True when DWM composition is enabled (execution guard, 요건정의서 §13).</summary>
+    /// <summary>True when DWM composition is enabled; composition is required for the app to run.</summary>
     public static bool IsCompositionEnabled()
         => DwmIsCompositionEnabled(out bool enabled) == Ok && enabled;
 }

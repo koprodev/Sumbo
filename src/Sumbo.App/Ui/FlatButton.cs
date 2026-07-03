@@ -5,21 +5,21 @@ using System.Windows.Forms;
 
 namespace Sumbo.App.Ui;
 
-/// <summary>Visual style for a <see cref="FlatButton"/> (디자인샘플.png의 버튼 계열).</summary>
+/// <summary>Visual style for a <see cref="FlatButton"/>.</summary>
 internal enum ButtonKind
 {
-    /// <summary>Blue gradient primary CTA ("미러링 시작").</summary>
+    /// <summary>Blue gradient primary call-to-action button.</summary>
     Primary,
-    /// <summary>Dark card-colored secondary button ("UI 숨기기", "프레임 숨기기").</summary>
+    /// <summary>Dark card-colored secondary button.</summary>
     Dark,
-    /// <summary>Transparent / dashed ghost button ("사용자 지정 추가").</summary>
+    /// <summary>Transparent ghost button with an optionally dashed outline.</summary>
     Ghost,
 }
 
 /// <summary>
-/// A flat, rounded, owner-drawn button with an optional leading MDL2 glyph — matches the mockup's pill buttons.
-/// Extends <see cref="Control"/> (not <see cref="Button"/>) for full paint control while inheriting the standard
-/// <see cref="Control.Click"/> event and hover tracking.
+/// Flat, rounded, owner-drawn pill button with an optional leading MDL2 glyph. Extends <see cref="Control"/>
+/// (not <see cref="Button"/>) for full paint control while inheriting the standard <see cref="Control.Click"/>
+/// event and hover tracking.
 /// </summary>
 internal sealed class FlatButton : Control
 {
@@ -51,7 +51,7 @@ internal sealed class FlatButton : Control
     protected override void OnMouseEnter(EventArgs e) { _hover = true; Invalidate(); base.OnMouseEnter(e); }
     protected override void OnMouseLeave(EventArgs e) { _hover = false; Invalidate(); base.OnMouseLeave(e); }
 
-    // V2-D 이월 ②: the owner-drawn surface must reflect Enabled itself (no system disabled rendering).
+    // Owner-drawn surface must repaint on Enabled changes; there is no system disabled rendering.
     protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -75,7 +75,7 @@ internal sealed class FlatButton : Control
                     g.FillPath(brush, path);
                 textColor = Theme.TextOnAccent;
                 break;
-            case ButtonKind.Primary: // disabled CTA drops to a muted card (이월 ②)
+            case ButtonKind.Primary: // disabled CTA drops to a muted card
                 Theme.FillRounded(g, r, _radius, Theme.CardBg);
                 Theme.DrawRounded(g, r, _radius, Theme.CardBorder);
                 break;

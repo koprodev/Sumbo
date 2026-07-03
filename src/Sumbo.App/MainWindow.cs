@@ -14,17 +14,16 @@ using Sumbo.Native;
 namespace Sumbo.App;
 
 /// <summary>
-/// The v2 single-window shell (체크리스트v2.md V2-A~D): the main window itself IS the mirror output — the whole center
-/// is a child-free form-surface canvas hosting the DWM thumbnail (<see cref="MirrorSurface"/>), with a right icon
-/// rail whose items switch the side panel between <see cref="PanelView"/>s. The shell owns the mirror and the V2-D
-/// window-control state (크기 preset/앵커/클릭전달/클릭통과/잠금/AOT — v1 CloneForm 창 셸 절반의 재해석) and wires
-/// panel events to them — panels are pure views. The UI 숨김 (overlay) mode collapses the chrome to a mirror-only
-/// canvas; click-through forces it (Q3 확정) with Ctrl+Alt+C / tray restore / ESC as the exits.
-/// Custom chrome (borderless title bar / window buttons / resize grips / per-monitor DPI) carries over from v1.
+/// Single-window shell: the main window itself IS the mirror output — the whole center is a child-free
+/// form-surface canvas hosting the DWM thumbnail (<see cref="MirrorSurface"/>), with a right icon rail whose items
+/// switch the side panel between <see cref="PanelView"/>s. The shell owns the mirror and all window-control state
+/// (size preset / anchor / click forwarding / click-through / lock / always-on-top) and wires panel events to
+/// them — panels are pure views. Overlay (UI-hidden) mode collapses the chrome to a mirror-only canvas;
+/// click-through forces it, with Ctrl+Alt+C / tray restore / ESC as the exits.
 /// <para>
-/// DWM 게이트 (v1 실측 승계): the thumbnail destination must be this top-level window's handle, and the thumbnail
-/// composites OVER child controls — so no child control may intersect <see cref="_mirrorRect"/>. The side panel and
-/// rail never overlap the canvas; expanding/collapsing the panel re-fits the mirror via <see cref="DoLayout"/>.
+/// DWM constraints: the thumbnail destination must be this top-level window's handle, and the thumbnail composites
+/// OVER child controls — so no child control may intersect <see cref="_mirrorRect"/>. The side panel and rail
+/// never overlap the canvas; expanding/collapsing the panel re-fits the mirror via <see cref="DoLayout"/>.
 /// </para>
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -51,8 +50,7 @@ public sealed class MainWindow : Form
     private const string PanelSettings = "settings";
     private const string PanelAbout = "about";
 
-    /// <summary>Rail order — parallel to <see cref="RailItems"/>. All eight ids map to embedded panels
-    /// ("settings" included — V2-E1 SettingsPanel 흡수).</summary>
+    /// <summary>Rail order — parallel to <see cref="RailItems"/>. Every id maps to an embedded panel.</summary>
     private static readonly string[] RailIds =
     {
         PanelTargets, PanelDisplay, PanelRegion, PanelProfiles, PanelHotkeys, PanelGroup, PanelSettings, PanelAbout,
@@ -67,8 +65,7 @@ public sealed class MainWindow : Form
     private readonly Label _panelTitle = new();
     private readonly FlatButton _panelClose = new();
 
-    // ── Panel framework (V2-B/E1) — one PanelView per rail id, swapped by visibility under the shared header.
-    // V2-E1 filled the last four ids (hotkeys/group/settings/about) with real panels; the shared PendingPanel is gone.
+    // ── Panel framework — one PanelView per rail id, swapped by visibility under the shared header ──
     private readonly TargetsPanel _targetsPanel;
     private readonly DisplayPanel _displayPanel;
     private readonly RegionPanel _regionPanel;
@@ -80,50 +77,50 @@ public sealed class MainWindow : Form
     private readonly PanelView[] _allPanels;
     private readonly Dictionary<string, PanelView> _panels;
 
-    // ── FR-02 영역 드래그 (V2-C — CloneForm 이식): armed by the region panel / Ctrl+Alt+R, then a drag over the
-    // mirror rect commits a crop. The rubber band is a SCREEN-level reversible frame — the DWM thumbnail composites
-    // over the form surface, so a GDI rubber band drawn in OnPaint would be hidden under it (v1 실증 :1373).
+    // ── Region drag selection: armed by the region panel / Ctrl+Alt+R, then a drag over the mirror rect commits
+    // a crop. The rubber band is a SCREEN-level reversible frame — the DWM thumbnail composites over the form
+    // surface, so a GDI rubber band drawn in OnPaint would be hidden under it.
     private bool _regionSelecting;
     private bool _regionDragging;
     private Point _dragStartClient;
     private Point _dragCurrentClient;
     private Rectangle _dragFrame; // last reversible frame (screen coords), Empty when none
 
-    // FR-15 드로우 절반 (V2-B): canvas frame ring on/off — visual only; margin/영속 재해석은 V2-D.
+    // Canvas frame ring on/off — visual only; the reserved margin around the thumbnail stays either way.
     private bool _showMirrorBorder = true;
 
-    // ── V2-D 창 제어 상태 (v1 CloneForm 창 셸 절반의 메인창 재해석) ──
-    private ClientSizeMode? _sizeMode;      // FR-03 preset; null = free size (사용자 드래그/clamp 해제 — [2차] F1)
-    private SnapAnchor? _anchor;            // FR-04; null = 해제
-    private bool _clickForward;             // FR-06
-    private bool _clickThrough;             // FR-07 — 통과 ON 은 UI 숨김을 동반 (Q3 확정)
-    private bool _locked;                   // FR-15 (in-memory — v1 승계, §7.2 에 lock 필드 없음)
-    private bool _alwaysOnTop;              // 항상 위에 표시 (TopMost 반영)
-    private bool _uiHidden;                 // V2-D 오버레이 모드 — rail/패널/타이틀 숨김, 클라이언트 전체가 미러
-    private bool _preOverlaySideOpen;       // 오버레이 진입 시점의 패널 열림 스냅샷 (복원 재현 — R5)
-    private bool _suppressPlacementEvents;  // 내부 크기/위치 변경이 preset/anchor 를 해제하지 않도록 ([2차] F2)
-    private bool _clickForwardFailWarned;   // FR-06 실패 안내 1회 (전달 재켜기 시 리셋 — v1 승계)
-    private FormWindowState _lastWindowState = FormWindowState.Normal; // 상태 전이 감지 → 전체화면 세그먼트 반영
-    private bool _exitRequested;            // V2-E3: CloseForExit() 경유 실종료 — OnFormClosing 의 close=트레이 취소 우회
-    private bool _trayNoticeShown;          // V2-E3: close→트레이 잔류 풍선 1회 게이트 (세션 한정 — Q1 채택)
-    private bool _userCloseGesture;         // V2-E3 [5차] hotfix: SC_CLOSE(X·Alt+F4·시스템 메뉴)만 마킹 — raw WM_CLOSE 와 결정적 구분
-    private readonly Icon _appIcon;         // 브랜드 아이콘 (배포 cycle) — borderless 크롬이라 Alt-Tab/taskbar 표면 전용, OnFormClosed 해제
+    // ── Window-control state ──
+    private ClientSizeMode? _sizeMode;      // size preset; null = free size (a user drag or clamp clears it)
+    private SnapAnchor? _anchor;            // null = unanchored
+    private bool _clickForward;             // mutually exclusive with _clickThrough
+    private bool _clickThrough;             // ON forces overlay (UI-hidden) mode
+    private bool _locked;                   // in-memory only — not persisted in profiles
+    private bool _alwaysOnTop;
+    private bool _uiHidden;                 // overlay mode — rail/panel/title hidden, the whole client is the mirror
+    private bool _preOverlaySideOpen;       // side-panel open state at overlay entry, reproduced on restore
+    private bool _suppressPlacementEvents;  // internal size/move changes must not clear the user's preset/anchor
+    private bool _clickForwardFailWarned;   // one-time forward-failure notice; reset when forwarding is re-enabled
+    private FormWindowState _lastWindowState = FormWindowState.Normal; // detects state transitions for panel reflect
+    private bool _exitRequested;            // set by CloseForExit() — bypasses the close-to-tray cancel in OnFormClosing
+    private bool _trayNoticeShown;          // close-to-tray residency balloon shown once per session
+    private bool _userCloseGesture;         // deliberate user close: chrome X (OnMouseDown) or SC_CLOSE (Alt+F4 / system menu / taskbar) — vs a raw WM_CLOSE
+    private readonly Icon _appIcon;         // borderless chrome, so only Alt-Tab/taskbar surfaces show it; disposed in OnFormClosed
     private const int MK_LBUTTON = 0x0001;
-    private const int ScClose = 0xF060;     // SC_CLOSE (Native User32 는 무수정 재사용 원칙 — MK_LBUTTON 선례)
+    private const int ScClose = 0xF060;     // WM_SYSCOMMAND SC_CLOSE
 
-    // ── Embedded mirror (V2-A core) ── the canvas is FORM SURFACE: OnPaint draws the frame + idle hint at
+    // ── Embedded mirror ── the canvas is bare FORM SURFACE: OnPaint draws the frame + idle hint at
     // _mirrorRect, and the DWM thumbnail composites over its inner area. No child control may cover this rect.
     private readonly MirrorSurface _mirror = new();
     private Rectangle _mirrorRect;
     private readonly System.Windows.Forms.Timer _sourceWatch = new() { Interval = 1000 };
 
-    // ── FR-08 그룹 순환 (V2-E1 — v1 CloneForm 그룹 로직의 단일 미러 재해석) ──
+    // ── Group cycling state ──
     private readonly GroupSwitcher _group = new();
     private readonly System.Windows.Forms.Timer _groupTimer = new();
     private bool _groupMissingWarned;
     private int _groupMissCount;
 
-    // ── FR-10 미러 우클릭 컨텍스트 메뉴 (V2-E1) ──
+    // ── Mirror right-click context menu ──
     private readonly ContextMenuStrip _mirrorMenu = new();
     private ToolStripMenuItem _ctxTarget = null!;
     private ToolStripMenuItem _ctxStop = null!;
@@ -208,18 +205,18 @@ public sealed class MainWindow : Form
         _settingsPanel.LanguageSelected += OnSettingsLanguageSelected;
         _settingsPanel.StartWithWindowsToggled += OnSettingsStartWithWindowsToggled;
         _settingsPanel.MinimizeToTrayToggled += OnSettingsMinimizeToTrayToggled;
-        _hotkeysPanel.ReflectFailures(_manager.HotkeyFailures); // FR-09 startup-static conflict flags (ApplyStrings 후)
-        _settingsPanel.ReflectSettings(_manager.Current);       // seed 언어/시작 토글
-        _groupTimer.Tick += OnGroupTick;                        // FR-08 순환 타이머
+        _hotkeysPanel.ReflectFailures(_manager.HotkeyFailures); // startup hotkey-conflict flags (after ApplyStrings)
+        _settingsPanel.ReflectSettings(_manager.Current);       // seed language/startup toggles
+        _groupTimer.Tick += OnGroupTick;
 
-        _mirror.SetOpacity(_manager.Current.Defaults.Opacity); // FR-05 초기값 = 새 미러 기본값 승계 (B-Q3)
-        _alwaysOnTop = _manager.Current.Defaults.AlwaysOnTop; // v1 미러 창 AOT 기본값의 메인창 재해석 (V2-D 결선)
+        _mirror.SetOpacity(_manager.Current.Defaults.Opacity);
+        _alwaysOnTop = _manager.Current.Defaults.AlwaysOnTop;
         TopMost = _alwaysOnTop;
         SyncPanels();
 
         _mirror.Changed += OnMirrorChanged;
-        _manager.HotkeyRouted += OnHotkeyRouted;       // v2: with no clone windows the global hotkeys land here
-        _manager.SurfaceRequested += OnSurfaceRequested; // v2 interim ([5차] F1): tray 표시/숨김·복원도 이 창 대상
+        _manager.HotkeyRouted += OnHotkeyRouted;       // global hotkeys land on this window
+        _manager.SurfaceRequested += OnSurfaceRequested; // tray show/hide/restore requests target this window
         _sourceWatch.Tick += (_, _) => _mirror.ValidateSource(); // prompt source-loss → idle canvas (no dead frame)
         _sourceWatch.Start();
     }
@@ -238,9 +235,9 @@ public sealed class MainWindow : Form
         Controls.Add(_rail);
     }
 
-    /// <summary>FR-10 (V2-E1): the mirror-canvas right-click menu (v1 CloneForm 컨텍스트 메뉴의 단일 미러 재해석,
-    /// 패널 중복 최소 세트). Shown only over a live mirror (<see cref="OnMouseUp"/> gate); item enable/check is set
-    /// on Opening. Click-forward/through toggle through the same shell routes as the display panel.</summary>
+    /// <summary>Mirror-canvas right-click menu. Shown only over a live mirror (<see cref="OnMouseUp"/> gate); item
+    /// enable/check state is set on Opening. Click-forward/through toggle through the same shell routes as the
+    /// display panel.</summary>
     private void BuildMirrorMenu()
     {
         _ctxTarget = new ToolStripMenuItem();
@@ -272,7 +269,7 @@ public sealed class MainWindow : Form
             bool m = _mirror.HasMirror;
             _ctxStop.Enabled = m;
             _ctxRegion.Enabled = m;
-            _ctxForward.Enabled = m && !_clickThrough; // 전달·통과 상호배타 (v1 :729)
+            _ctxForward.Enabled = m && !_clickThrough; // forwarding and click-through are mutually exclusive
             _ctxForward.Checked = _clickForward;
             _ctxThrough.Enabled = m && _manager.IsClickThroughHotkeyLive;
             _ctxThrough.Checked = _clickThrough;
@@ -333,20 +330,17 @@ public sealed class MainWindow : Form
         _ => _loc.Get(LocKeys.Main_Nav_Targets),
     };
 
-    /// <summary>Switches the side panel to <paramref name="id"/>'s <see cref="PanelView"/> and expands the panel
-    /// (V2-E1: all eight rail ids now map to real panels — settings is the absorbed <see cref="SettingsPanel"/>, not
-    /// a separate window; region/profiles/settings/group re-seed from their sources on entry). IconRail's programmatic
-    /// SelectedIndex setter does not raise ItemClicked, so this is the single routing entry point for both user clicks
-    /// and programmatic switches (e.g. the PickWindow hotkey / tray OpenSettings).</summary>
+    /// <summary>Switches the side panel to <paramref name="id"/>'s <see cref="PanelView"/> and expands the panel.
+    /// IconRail's programmatic SelectedIndex setter does not raise ItemClicked, so this is the single routing entry
+    /// point for both user clicks and programmatic switches (e.g. the PickWindow hotkey / tray OpenSettings).</summary>
     private void SetActivePanel(string id)
     {
         _activePanelId = id;
         _rail.SelectedIndex = Array.IndexOf(RailIds, id);
         _panelTitle.Text = PanelTitle(id);
 
-        // V2-C: the stores are edited outside this window's lifetime too (v1 files carry over) — re-read on entry
-        // so the list is fresh without a per-keystroke file watch (v1 lazy menu-open enumeration 승계). V2-E1: the
-        // settings panel (v1 설정 창 흡수) and group panel re-seed from their sources on entry too.
+        // The stores can be edited outside this window's lifetime — re-read on entry so the list is fresh without
+        // a per-keystroke file watch. The settings and group panels re-seed from their sources on entry too.
         if (id == PanelRegion)
             RefreshRegionList();
         else if (id == PanelProfiles)
@@ -379,7 +373,7 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>Card click = start (or retarget) the embedded mirror. Re-clicking the already-mirrored target keeps
-    /// the live session (no re-register flicker); a failed registration shows the v1 notice and leaves any current
+    /// the live session (no re-register flicker); a failed registration shows a notice and leaves any current
     /// mirror running (MirrorSurface swaps only on success).</summary>
     private void OnTargetActivated(object? sender, WindowInfo target)
     {
@@ -394,7 +388,7 @@ public sealed class MainWindow : Form
             SyncPanels(); // undo the card's optimistic self-select — the mirror state didn't change
             MessageBox.Show(
                 this,
-                error ?? _loc.Get(LocKeys.Dialog_CloneFailed_Body), // [5차] F3: zero-size/no-message failures get a real body, not the caption twice
+                error ?? _loc.Get(LocKeys.Dialog_CloneFailed_Body), // zero-size/no-message failures get a real body, not the caption twice
                 _loc.Get(LocKeys.Dialog_CloneFailed_Caption),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
@@ -413,16 +407,16 @@ public sealed class MainWindow : Form
         Invalidate(_mirrorRect); // redraw (or clear) the canvas ring — the DWM rect itself is unchanged
     }
 
-    /// <summary>Single route for opacity changes — panel slider AND the Ctrl+Alt+↑/↓ hotkeys land here, so the
-    /// mirror and the display-panel readout can never diverge ([2차] F1, V2-B).</summary>
+    /// <summary>Single route for opacity changes — the panel slider AND the Ctrl+Alt+↑/↓ hotkeys land here, so the
+    /// mirror and the display-panel readout can never diverge.</summary>
     private void ApplyOpacity(int percent)
     {
         _mirror.SetOpacity(percent);
-        ApplyVisualState(); // 오버레이 중엔 Form.Opacity 채널이 p% 를 따라간다 ([2차] F4 invariant)
+        ApplyVisualState(); // in overlay mode the Form.Opacity channel must track the new percent
         SyncPanels();
     }
 
-    // ── FR-03/04/06/07/15 창 제어 (V2-D — v1 CloneForm 창 셸 절반의 메인창 재해석) ────────
+    // ── Window controls (size preset / anchor / click modes / lock) ──────
 
     private void OnSizeModeSelected(object? sender, int index)
     {
@@ -439,8 +433,8 @@ public sealed class MainWindow : Form
         });
     }
 
-    /// <summary>FR-03 전체화면 = maximize (v1 borderless 전체화면의 메인창 재해석 — WindowPlacement.cs:25 주석 승계).
-    /// 세그먼트 반영은 <see cref="OnResize"/> 의 상태 전이 감지와 본 SyncPanels 가 담당.</summary>
+    /// <summary>Fullscreen preset = maximize. The panel segment follows via the state-transition check in
+    /// <see cref="OnResize"/> plus the SyncPanels here.</summary>
     private void EnterFullscreen()
     {
         if (!_mirror.HasMirror || _locked)
@@ -454,11 +448,12 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>
-    /// FR-03 크기 preset 단일 route ([2차] F1): active source(크롭 반영 — v1 보완 1) 기준 목표 썸네일 물리 크기를
-    /// <see cref="WindowPlacement.ComputeSizeMode"/> 로 산출하고, <see cref="DoLayout"/> 이 미러 주변에 예약하는
-    /// 크롬(타이틀/그립/패드/rail/사이드패널 + BorderDip 물리 마진)을 역산해 ClientSize 로 적용한 뒤, 실제 DWM dest
-    /// 크기를 재실측한다. MinimumSize(960×600) 등으로 목표에서 4px 넘게 벗어나면 preset 의미가 깨진 것 — 해제(-1)로
-    /// 정직하게 반영한다. v1 작업영역 cap 은 목표 자체가 cap 된 값이라 편차 0 = preset 유지 (v1 의미 보존).
+    /// Single route for size presets: computes the target thumbnail physical size from the active source (crop
+    /// applied) via <see cref="WindowPlacement.ComputeSizeMode"/>, back-computes the chrome <see cref="DoLayout"/>
+    /// reserves around the mirror (title/grips/padding/rail/side panel + the physical border margin) into a
+    /// ClientSize, then re-measures the actual DWM destination. More than 4px off target (e.g. clamped by
+    /// MinimumSize) means the preset no longer holds — clear it. The work-area cap is baked into the target itself,
+    /// so a capped-but-exact result keeps the preset.
     /// </summary>
     private void ApplyMirrorSizeMode(ClientSizeMode mode)
     {
@@ -471,7 +466,7 @@ public sealed class MainWindow : Form
         if (WindowState == FormWindowState.Maximized)
         {
             _suppressPlacementEvents = true;
-            try { WindowState = FormWindowState.Normal; } // 전체화면 해제 후 preset 적용 (v1 ApplySizeMode :495 승계)
+            try { WindowState = FormWindowState.Normal; } // leave maximized before applying a preset
             finally { _suppressPlacementEvents = false; }
         }
 
@@ -482,9 +477,9 @@ public sealed class MainWindow : Form
         }
 
         (double sx, double sy) = ClientScale();
-        int margin = Math.Max(2, (int)Math.Round(BorderDip * sx)); // MirrorHostPhysical 과 동일식 — 역산 정합
+        int margin = Math.Max(2, (int)Math.Round(BorderDip * sx)); // same formula as MirrorHostPhysical — the back-computation must agree
         int overheadW = Grip * 2 + Theme.Pad * 2 + Theme.IconRailWidth + (_sideOpen ? Theme.SidePanelWidth : 0);
-        int overheadH = TitleH + Theme.Pad * 2 + Grip; // DoLayout 역산
+        int overheadH = TitleH + Theme.Pad * 2 + Grip; // inverse of DoLayout's reserved chrome
 
         Rectangle wa = Screen.FromControl(this).WorkingArea;
         int maxThumbW = Math.Max(1, (int)((wa.Width - overheadW) * sx) - margin * 2);
@@ -496,15 +491,15 @@ public sealed class MainWindow : Form
             (int)Math.Ceiling((th + margin * 2) / sy) + overheadH);
 
         _suppressPlacementEvents = true;
-        try { ClientSize = target; } // MinimumSize 는 Form 이 자체 clamp — 아래 실측 비교가 감지한다
+        try { ClientSize = target; } // the Form clamps to MinimumSize itself — the measurement below detects that
         finally { _suppressPlacementEvents = false; }
 
         _sizeMode = mode;
         ReapplyAnchor();
 
-        (int aw, int ah) = _mirror.LastDestSize; // ClientSize 변경 → OnLayout → DoLayout → FitToHost 완료 후 실측
+        (int aw, int ah) = _mirror.LastDestSize; // measured after ClientSize → OnLayout → DoLayout → FitToHost settles
         if (Math.Abs(aw - tw) > 4 || Math.Abs(ah - th) > 4)
-            _sizeMode = null; // clamp 로 preset 의미 상실 → 해제 반영 ([2차] F1 정책)
+            _sizeMode = null; // clamped off target — the preset no longer holds
 
         SyncPanels();
     }
@@ -527,14 +522,14 @@ public sealed class MainWindow : Form
             7 => SnapAnchor.BottomLeft,
             8 => SnapAnchor.Bottom,
             9 => SnapAnchor.BottomRight,
-            _ => null, // 0 = 해제
+            _ => null, // 0 = unanchored
         };
         ReapplyAnchor();
         SyncPanels();
     }
 
-    /// <summary>FR-04: re-anchors the window inside the current work area (v1 <c>ReapplyAnchor</c> :539 승계 —
-    /// preset 적용/리사이즈 종료/DPI 이동 후 재정렬). Maximized 는 배치 개념이 없어 스킵.</summary>
+    /// <summary>Re-anchors the window inside the current work area (after a preset apply, resize end, or DPI move).
+    /// Skipped when maximized — placement has no meaning there.</summary>
     private void ReapplyAnchor()
     {
         if (_anchor is null || WindowState != FormWindowState.Normal)
@@ -551,23 +546,23 @@ public sealed class MainWindow : Form
 
     private void OnClickForwardToggleRequested(object? sender, bool on) => SetClickForward(on);
 
-    /// <summary>FR-06 단일 route (desired state — idempotent, v1 M6-C F2 승계). 통과와 상호배타 (v1 :729 — 투명
-    /// 창은 입력을 받지 못함); 거부 시 SyncPanels 가 토글 시각을 원복한다.</summary>
+    /// <summary>Single route for click forwarding (desired state — idempotent). Mutually exclusive with
+    /// click-through (a transparent window receives no input); on refusal SyncPanels reverts the toggle visual.</summary>
     private void SetClickForward(bool on)
     {
         if (_clickForward != on && (!on || (_mirror.HasMirror && !_clickThrough)))
         {
             _clickForward = on;
             if (on)
-                _clickForwardFailWarned = false; // 켤 때마다 미지원 안내 1회 재허용 (v1 승계)
+                _clickForwardFailWarned = false; // re-arm the one-time unsupported notice on every enable
         }
         SyncPanels();
     }
 
     /// <summary>
-    /// FR-07 단일 route ([2차] F3) — 패널 토글/Ctrl+Alt+C/프로필 복원/트레이/ESC 전 진입점이 여기로 온다.
-    /// ON: 미러 + 탈출 핫키 guard(v1 :718) → 전달 OFF(상호배타) → UI 숨김 동반(Q3 확정) → 스타일.
-    /// OFF: 통과 해제 = UI 복원 동반 — 탈출 경로가 항상 온전한 창을 돌려준다 ([2차] Q3 CODEX 정합).
+    /// Single route for click-through — panel toggle, Ctrl+Alt+C, profile restore, tray and ESC all enter here.
+    /// ON: requires a mirror and a live escape hotkey, turns forwarding off (mutually exclusive), and forces
+    /// overlay (UI-hidden) mode. OFF: also restores the UI — every escape path returns a fully usable window.
     /// </summary>
     private void SetClickThrough(bool on)
     {
@@ -586,7 +581,7 @@ public sealed class MainWindow : Form
             }
             if (!_manager.IsClickThroughHotkeyLive)
             {
-                SyncPanels(); // 토글 시각 원복
+                SyncPanels(); // revert the toggle visual
                 MessageBox.Show(
                     this,
                     _loc.Format(LocKeys.Dialog_ClickThroughUnavailable_Body, ClickThroughChord()),
@@ -595,11 +590,11 @@ public sealed class MainWindow : Form
                     MessageBoxIcon.Warning);
                 return;
             }
-            _clickForward = false; // 상호배타 (v1 :729)
+            _clickForward = false; // mutually exclusive
         }
 
         _clickThrough = on;
-        SetOverlayMode(on); // ON = 숨김 동반 / OFF = 복원 동반 — ApplyVisualState + SyncPanels 포함
+        SetOverlayMode(on); // ON hides the UI, OFF restores it — includes ApplyVisualState + SyncPanels
     }
 
     private void OnClickThroughToggleRequested(object? sender, bool on) => SetClickThrough(on);
@@ -617,7 +612,7 @@ public sealed class MainWindow : Form
             SetOverlayMode(true);
     }
 
-    /// <summary>UI 숨김(오버레이) 모드 단일 route — 상태 전환 + [2차] F4 invariant 재적용 + 패널 반영.</summary>
+    /// <summary>Single route for overlay (UI-hidden) mode — state switch + visual-state reapply + panel reflect.</summary>
     private void SetOverlayMode(bool hidden)
     {
         SetUiHidden(hidden);
@@ -625,8 +620,8 @@ public sealed class MainWindow : Form
         SyncPanels();
     }
 
-    /// <summary>Hides/restores the chrome (rail/사이드패널/타이틀) so the whole client becomes the mirror canvas
-    /// (이월 ① — v1 <c>_hideAllBtn</c> 재해석). 복원은 진입 시점의 패널 열림 상태를 재현한다 (R5).</summary>
+    /// <summary>Hides/restores the chrome (rail/side panel/title) so the whole client becomes the mirror canvas.
+    /// Restore reproduces the side-panel open state captured at entry.</summary>
     private void SetUiHidden(bool hidden)
     {
         if (_uiHidden == hidden)
@@ -650,9 +645,10 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>
-    /// [2차] F4 invariant 단일 재적용 — 일반: Form.Opacity 1.0 + 썸네일 p% / 오버레이: Form.Opacity p%(배후 투시,
-    /// Q2 확정) + 썸네일 255 (이중 감쇠 방지). 통과 스타일은 항상 마지막: Opacity 가 1.0 으로 돌아오면 WinForms 가
-    /// WS_EX_LAYERED|TRANSPARENT 를 떨군다 (v1 보완 3 실측 — CloneForm.cs:557).
+    /// Reapplies the opacity invariant — one saved percent, two channels. Normal: Form.Opacity 1.0 + thumbnail at
+    /// the percent. Overlay: Form.Opacity at the percent (see-through to what is behind) + thumbnail 255, avoiding
+    /// double attenuation. Click-through style always last: when Opacity returns to 1.0, WinForms drops
+    /// WS_EX_LAYERED|WS_EX_TRANSPARENT.
     /// </summary>
     private void ApplyVisualState()
     {
@@ -661,8 +657,8 @@ public sealed class MainWindow : Form
         ApplyClickThroughStyle(_clickThrough);
     }
 
-    /// <summary>Adds/removes <c>WS_EX_LAYERED|WS_EX_TRANSPARENT</c> then commits with <c>SWP_FRAMECHANGED</c>
-    /// (v1 <c>ApplyClickThroughStyle</c> :742 이식 — LAYERED 는 Opacity&lt;1 인 동안 보존해 FR-05 를 지킨다).</summary>
+    /// <summary>Adds/removes <c>WS_EX_LAYERED|WS_EX_TRANSPARENT</c> then commits with <c>SWP_FRAMECHANGED</c>.
+    /// LAYERED is kept while Opacity &lt; 1 so the window-opacity effect survives the click-through exit.</summary>
     private void ApplyClickThroughStyle(bool on)
     {
         if (!IsHandleCreated)
@@ -688,7 +684,7 @@ public sealed class MainWindow : Form
 
     private void OnLockToggleRequested(object? sender, bool on)
     {
-        _locked = on; // FR-15 — in-memory (v1 :91 승계). 크기·앵커는 ReflectMirror 게이트, 이동/리사이즈는 크롬 gate.
+        _locked = on; // size/anchor requests gate on this; move/resize are blocked in the chrome hit-test and WndProc
         SyncPanels();
     }
 
@@ -701,8 +697,9 @@ public sealed class MainWindow : Form
         SyncPanels();
     }
 
-    /// <summary>FR-06: maps a mirror-canvas mouse event onto the source and posts it (<see cref="MirrorSurface"/>
-    /// 캡슐화 — [2차] Q2). Shell 몫 = 게이트(전달 ON/미러/영역 선택 우선) + 논리→물리 변환 + 실패 1회 안내.</summary>
+    /// <summary>Maps a mirror-canvas mouse event onto the source and posts it (the mapping lives in
+    /// <see cref="MirrorSurface"/>). The shell's share: gating (forward ON / live mirror / region selection takes
+    /// priority) + logical→physical conversion + a one-time failure notice.</summary>
     private bool TryForward(uint msg, MouseEventArgs e, IntPtr wParam, bool wheel = false)
     {
         if (!_clickForward || !_mirror.HasMirror || _regionSelecting || _regionDragging)
@@ -729,9 +726,9 @@ public sealed class MainWindow : Form
     }
 
     /// <summary>Single chokepoint for mirror transitions (start / stop / source loss): panel state and the canvas
-    /// frame all follow <see cref="MirrorSurface"/> state here. Losing the mirror also releases the V2-D window
-    /// modes — a stuck lock (v1 :684 승계) or an orphaned click-through/overlay would strand the user on a
-    /// transparent, empty, unmovable window.</summary>
+    /// frame all follow <see cref="MirrorSurface"/> state here. Losing the mirror also releases every window mode —
+    /// a stuck lock or an orphaned click-through/overlay would strand the user on a transparent, empty, unmovable
+    /// window.</summary>
     private void OnMirrorChanged(object? sender, EventArgs e)
     {
         if (!_mirror.HasMirror)
@@ -741,11 +738,11 @@ public sealed class MainWindow : Form
             _locked = false;
             _clickForward = false;
             _sizeMode = null;
-            _anchor = null; // v1 ResetToEmptyState :679 정합 — idle 창에 앵커 잔존 금지 ([5차] LOW 1)
+            _anchor = null; // an idle window must not keep a stale anchor
             if (_group.IsRunning)
-                StopGroupSwitch(); // FR-08: 미러 소실 = 순환할 소스 없음 (타이머 정지, 멤버는 보존)
+                StopGroupSwitch(); // no source left to cycle — stop the timer, keep the members
             if (_clickThrough)
-                SetClickThrough(false); // route 가 UI 복원 동반 — 투명 빈 창 고립 차단
+                SetClickThrough(false); // the route also restores the UI — no stranding on a transparent empty window
             else if (_uiHidden)
                 SetOverlayMode(false);
         }
@@ -762,11 +759,10 @@ public sealed class MainWindow : Form
         _displayPanel.ReflectMirror(_mirror.HasMirror, ShellViewState(), _manager.IsClickThroughHotkeyLive);
         _regionPanel.ReflectMirror(_mirror.HasMirror, _mirror.CurrentRegion);
         _profilesPanel.ReflectMirror(_mirror.HasMirror);
-        _groupPanel.ReflectMirror(_mirror.HasMirror); // FR-08 경량 반영 (버튼 활성만; 멤버 목록은 ReflectGroup)
+        _groupPanel.ReflectMirror(_mirror.HasMirror); // lightweight — button enable only; the member list goes through ReflectGroup
     }
 
-    /// <summary>Snapshot of the shell's window-control state for the 표시 패널 (V2-D — v1 <c>CloneForm.Snapshot</c>
-    /// 의 메인창 재해석; FR-03 전체화면 = maximize).</summary>
+    /// <summary>Snapshot of the shell's window-control state for the display panel (fullscreen = maximized).</summary>
     private MirrorViewState ShellViewState() => new()
     {
         SizeMode = _sizeMode,
@@ -781,10 +777,10 @@ public sealed class MainWindow : Form
         TargetTitle = _mirror.TargetTitle,
     };
 
-    // ── FR-02 영역 (V2-C) — panel/hotkey intents → mirror crop + store ────
+    // ── Region crop — panel/hotkey intents → mirror crop + store ─────────
 
     /// <summary>Single route for crop changes (clear / saved apply / profile restore) — mirror crop, panel reflect
-    /// and the canvas repaint stay together ([2차] F3; the drag commit shares the same tail in
+    /// and the canvas repaint stay together (the drag commit shares the same tail in
     /// <see cref="CommitRegionDrag"/>). Not a mirror lifecycle transition, so <c>Changed</c> stays out of it.</summary>
     private void ApplyRegion(Sumbo.Core.Region? region)
     {
@@ -799,12 +795,12 @@ public sealed class MainWindow : Form
 
     private void OnRegionApplyRequested(object? sender, NamedRegion named) => ApplyRegion(named.Region);
 
-    /// <summary>Arms the mirror-rect drag selection (v1 <c>EnterRegionSelect</c> 승계 — 세션 가드 + 십자 커서).
-    /// A global Ctrl+Alt+R can arrive tray-hidden/minimized; restore first so there is a surface to drag on
-    /// (V2-E3 — 보이는 일반 상태에선 no-op 이라 오버레이 중 동작은 불변).</summary>
+    /// <summary>Arms the mirror-rect drag selection (session guard + cross cursor). A global Ctrl+Alt+R can arrive
+    /// while tray-hidden/minimized; restore first so there is a surface to drag on (a no-op when already visible,
+    /// so overlay-mode behavior is unchanged).</summary>
     private void EnterRegionSelect()
     {
-        if (!_mirror.HasMirror || _clickThrough) // 통과 중엔 마우스가 창에 닿지 않음 — v1 :857 가드 승계
+        if (!_mirror.HasMirror || _clickThrough) // during click-through the mouse never reaches this window
             return;
         if (!Visible || WindowState == FormWindowState.Minimized)
             RestoreFromTray();
@@ -821,10 +817,10 @@ public sealed class MainWindow : Form
         Cursor = Cursors.Default;
     }
 
-    /// <summary>Commits the finished drag: logical client corners → physical px (the DWM-side coordinate space,
-    /// [2차] F2 — <see cref="ClientScale"/> is shared with <see cref="MirrorHostPhysical"/> so both sides of the
-    /// mapping agree), then <see cref="MirrorSurface.SetRegionFromDrag"/> maps dest → source and applies the crop.
-    /// A stray click (&lt;4px source span) leaves the current region (v1 승계).</summary>
+    /// <summary>Commits the finished drag: logical client corners → physical px (the DWM-side coordinate space —
+    /// <see cref="ClientScale"/> is shared with <see cref="MirrorHostPhysical"/> so both sides of the mapping
+    /// agree), then <see cref="MirrorSurface.SetRegionFromDrag"/> maps dest → source and applies the crop.
+    /// A stray click (&lt;4px source span) leaves the current region unchanged.</summary>
     private void CommitRegionDrag()
     {
         _regionSelecting = false;
@@ -871,7 +867,7 @@ public sealed class MainWindow : Form
 
         try
         {
-            List<NamedRegion> list = _manager.Regions.Load().Where(r => r.Name != name).ToList(); // same-name overwrite (v1 승계)
+            List<NamedRegion> list = _manager.Regions.Load().Where(r => r.Name != name).ToList(); // same-name save overwrites
             list.Add(new NamedRegion(name, region));
             _manager.Regions.Save(list);
         }
@@ -900,7 +896,7 @@ public sealed class MainWindow : Form
 
     private void RefreshRegionList() => _regionPanel.SetRegions(_manager.Regions.Load());
 
-    // ── FR-13 프로필 (V2-C) — panel intents → capture/restore + store ─────
+    // ── Profiles — panel intents → capture/restore + store ───────────────
 
     private void OnProfileSaveRequested(object? sender, EventArgs e)
     {
@@ -922,39 +918,37 @@ public sealed class MainWindow : Form
         RefreshProfileList();
     }
 
-    /// <summary>Snapshots the embedded mirror + shell into a §7.2 <see cref="Profile"/> (v1 <c>CaptureProfile</c>
-    /// 재해석 — placement = MAIN-window bounds, schema-compatible; target spec = the 5-field
-    /// <c>CurrentTargetSpec</c> pattern so <see cref="WindowMatcher"/>'s captured-identity chain keeps working,
-    /// [2차] F1). The V2-D-owned fields (anchor / click-through / AOT) are captured from their current interim
-    /// values and preserved on restore ([2차] P1).</summary>
+    /// <summary>Snapshots the embedded mirror + shell into a <see cref="Profile"/> — placement = MAIN-window
+    /// bounds; the target spec carries the captured-identity fields (<see cref="CurrentTargetSpec"/>) so
+    /// <see cref="WindowMatcher"/>'s resolution chain keeps working after the source window is gone.</summary>
     private Profile CaptureProfile(string name)
     {
         return new Profile
         {
             Id = "p_" + Guid.NewGuid().ToString("N")[..8],
             Name = name,
-            Target = CurrentTargetSpec(), // FR-08/13 공용 — 현재 미러 소스의 durable spec
+            Target = CurrentTargetSpec(), // durable spec for the current mirror source (shared with group members)
             Region = ProfileRegion.FromRegion(_mirror.CurrentRegion),
             Placement = new Placement
             {
                 Monitor = Array.IndexOf(Screen.AllScreens, Screen.FromControl(this)),
-                Anchor = _anchor, // V2-D 결선 — 실값 캡처
+                Anchor = _anchor,
                 X = Bounds.X,
                 Y = Bounds.Y,
                 Width = Bounds.Width,
                 Height = Bounds.Height,
             },
             Opacity = _mirror.OpacityPercent,
-            ClickThrough = _clickThrough,  // V2-D 결선
+            ClickThrough = _clickThrough,
             ShowBorder = _showMirrorBorder,
-            AlwaysOnTop = _alwaysOnTop,    // V2-D 결선
+            AlwaysOnTop = _alwaysOnTop,
         };
     }
 
-    /// <summary>Restores a profile onto the embedded mirror (v1 <c>ApplyProfile</c> 이식, V2-D 전체 복원): resolve
-    /// via <see cref="WindowMatcher"/> → notice when unmatched → fresh <c>Start</c> (프로필 = fresh mirror 구성;
-    /// 실패 시 기존 미러 무변경 — v1 M6-C F3 승계) → region + opacity + border + placement/anchor + AOT, and
-    /// click-through LAST (v1 :1101 — OFF strips a stale style, ON stays guarded), then one settled panel push.</summary>
+    /// <summary>Restores a profile onto the embedded mirror: resolve via <see cref="WindowMatcher"/> → notice when
+    /// unmatched → fresh <c>Start</c> (a failed start leaves the current mirror unchanged) → region + opacity +
+    /// border + placement/anchor + always-on-top, and click-through LAST (OFF strips a stale style, ON stays
+    /// guarded), then one settled panel push.</summary>
     private void OnProfileApplyRequested(object? sender, Profile profile)
     {
         IReadOnlyList<WindowInfo> windows;
@@ -994,21 +988,20 @@ public sealed class MainWindow : Form
         _mirror.SetRegion(profile.Region?.ToRegion()); // Start() begins unclipped — restore the saved crop after it
         _mirror.SetOpacity(profile.Opacity);
         _showMirrorBorder = profile.ShowBorder;
-        ApplyProfilePlacement(profile.Placement); // V2-D 결선: 배치+앵커 실적용 (모니터 clamp — v1 :1115 이식)
-        SetAlwaysOnTop(profile.AlwaysOnTop);      // V2-D 결선: AOT 실적용
-        SetClickThrough(profile.ClickThrough);    // 마지막 — OFF 는 잔존 스타일 해제, ON 은 guard (v1 :1097-1101 승계)
-        ApplyVisualState();                       // [2차] F4 invariant 정착 (오버레이/일반 채널)
+        ApplyProfilePlacement(profile.Placement); // placement + anchor, clamped into the resolved monitor
+        SetAlwaysOnTop(profile.AlwaysOnTop);
+        SetClickThrough(profile.ClickThrough);    // last — OFF strips a stale style, ON stays guarded
+        ApplyVisualState();                       // settle the opacity channels (overlay/normal)
         SyncPanels();
         Invalidate(_mirrorRect);
     }
 
-    /// <summary>Positions the window per a saved <see cref="Placement"/>, clamped into the resolved monitor
-    /// (v1 <c>ApplyPlacement</c>/<c>ResolveScreen</c> :1115/:1134 이식 — 대상만 메인창). 저장 bounds 복원 = free
-    /// size (ClientSizeMode 프로필 영속은 체크리스트v2.md §8 이월 유지).</summary>
+    /// <summary>Positions the window per a saved <see cref="Placement"/>, clamped into the resolved monitor.
+    /// Restoring saved bounds means free size — the size preset is cleared.</summary>
     private void ApplyProfilePlacement(Placement placement)
     {
         if (WindowState != FormWindowState.Normal)
-            WindowState = FormWindowState.Normal; // 최대화 위엔 배치 복원이 안 먹는다 — 먼저 복귀
+            WindowState = FormWindowState.Normal; // placement doesn't apply while maximized — return to Normal first
 
         Screen screen = ResolveScreen(placement);
         Rectangle wa = screen.WorkingArea;
@@ -1034,7 +1027,7 @@ public sealed class MainWindow : Form
             return screens[placement.Monitor];
 
         // Saved monitor index no longer exists (display layout changed): prefer a screen intersecting
-        // the saved bounds, else the primary (v1 PEER Q3 보완 승계 — clamp happens in ApplyProfilePlacement).
+        // the saved bounds, else the primary (clamping happens in ApplyProfilePlacement).
         var saved = new Rectangle(placement.X, placement.Y, Math.Max(1, placement.Width), Math.Max(1, placement.Height));
         foreach (Screen s in screens)
             if (s.Bounds.IntersectsWith(saved))
@@ -1069,8 +1062,8 @@ public sealed class MainWindow : Form
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning) == DialogResult.Yes;
 
-    /// <summary>Modal name prompt (v1 <c>CloneForm.PromptForName</c> 이식). TopMost so it can never render behind an
-    /// always-on-top surface and look like a hang while blocked on an invisible modal (v1 보완 승계).</summary>
+    /// <summary>Modal name prompt. TopMost so it can never render behind an always-on-top surface and look like a
+    /// hang while blocked on an invisible modal.</summary>
     private string? PromptForName(string title, string initial)
     {
         using var dialog = new Form
@@ -1095,12 +1088,12 @@ public sealed class MainWindow : Form
         return dialog.ShowDialog(this) == DialogResult.OK ? input.Text.Trim() : null;
     }
 
-    // ── Global hotkeys (v2 routing — no clone windows) ───────────────────
+    // ── Global hotkeys ────────────────────────────────────────────────────
 
-    /// <summary>v2 hotkey semantics on the single window: ToggleVisible hides to / restores from the tray
-    /// (V2-E3 트레이 상주), PickWindow opens + refreshes the targets panel, and Opacity± steps the embedded
-    /// mirror through the same <see cref="ApplyOpacity"/> route as the panel slider (V2-B, [2차] F1).
-    /// RegionSelect/GroupSwitch/ClickThrough act on the mirror from V2-C/D.</summary>
+    /// <summary>Global hotkey semantics on the single window: ToggleVisible hides to / restores from the tray,
+    /// PickWindow opens + refreshes the targets panel, and Opacity± steps the embedded mirror through the same
+    /// <see cref="ApplyOpacity"/> route as the panel slider. RegionSelect/GroupSwitch/ClickThrough act on the
+    /// embedded mirror.</summary>
     private void OnHotkeyRouted(object? sender, HotkeyAction action)
     {
         switch (action)
@@ -1110,18 +1103,18 @@ public sealed class MainWindow : Form
                 break;
 
             case HotkeyAction.PickWindow:
-                RestoreFromTray(); // 통과/오버레이 해제 + 트레이·최소화 복원 + Activate (V2-E3 공용 복원 경로)
+                RestoreFromTray(); // clears click-through/overlay, restores from tray/minimized, activates
                 SetActivePanel(PanelTargets);
                 _targetsPanel.ReloadTargets();
                 _targetsPanel.FocusSearch();
                 break;
 
             case HotkeyAction.ClickThrough:
-                SetClickThrough(!_clickThrough); // FR-07 Ctrl+Alt+C — 진입/탈출 모두 단일 route ([2차] F3)
+                SetClickThrough(!_clickThrough); // entry and exit both go through the single route
                 break;
 
             case HotkeyAction.OpacityUp:
-                if (_mirror.HasMirror) ApplyOpacity(_mirror.OpacityPercent + 10); // FR-05 10% step (§6.4)
+                if (_mirror.HasMirror) ApplyOpacity(_mirror.OpacityPercent + 10);
                 break;
 
             case HotkeyAction.OpacityDown:
@@ -1129,17 +1122,17 @@ public sealed class MainWindow : Form
                 break;
 
             case HotkeyAction.RegionSelect:
-                EnterRegionSelect(); // FR-02 (V2-C) — v1 per-clone 핫키의 내장 미러 재해석 (미러 없으면 no-op)
+                EnterRegionSelect(); // no-op without a mirror
                 break;
 
             case HotkeyAction.GroupSwitch:
-                ToggleGroupSwitch(); // FR-08 (V2-E1) — 내장 미러 소스 순환 토글 (빈 그룹/미러 없음 게이트)
+                ToggleGroupSwitch(); // gated on empty group / no mirror
                 break;
         }
     }
 
-    /// <summary>Tray surface routing (V2-E3 트레이 상주) — 표시/숨김 shares the hotkey's tray toggle meaning,
-    /// 더블클릭/설정 restore only (a visible window must not hide on a "restore" gesture).</summary>
+    /// <summary>Tray surface routing — show/hide shares the hotkey's tray-toggle meaning; double-click and
+    /// settings restore only (a visible window must not hide on a "restore" gesture).</summary>
     private void OnSurfaceRequested(object? sender, SurfaceRequest request)
     {
         switch (request)
@@ -1153,16 +1146,15 @@ public sealed class MainWindow : Form
                 break;
 
             case SurfaceRequest.OpenSettings:
-                // V2-E1: 트레이 '설정' → 온전한 창 복원 후 흡수된 설정 패널 열기 (ShowSettings 별도 창 대체).
                 RestoreFromTray();
                 SetActivePanel(PanelSettings);
                 break;
         }
     }
 
-    // ── V2-E3 트레이 상주 (close=트레이 잔류 · 최소화=트레이 · 복원 단일 경로) ────
+    // ── Tray residency (close/minimize hide to tray · single restore path) ──
 
-    /// <summary>표시/숨김 (hotkey + tray menu): visible → tray, tray-hidden/minimized → full restore.
+    /// <summary>Show/hide toggle (hotkey + tray menu): visible → tray, tray-hidden/minimized → full restore.
     /// Explicit user intent, so no residency balloon.</summary>
     private void ToggleTraySurface()
     {
@@ -1174,8 +1166,8 @@ public sealed class MainWindow : Form
 
     /// <summary>Retires the window to the tray — <see cref="Control.Hide"/> drops the taskbar button, and the
     /// always-alive tray icon is the way back. Mirror/group/panel state is deliberately left untouched (hiding is
-    /// not a lifecycle transition — 최소화와 동일 의미, R4). The first close-to-tray shows a one-time balloon via
-    /// the manager → tray icon (Q1 채택) so the user knows the app did not exit.</summary>
+    /// not a lifecycle transition, same meaning as minimize). The first close-to-tray shows a one-time balloon via
+    /// the manager → tray icon so the user knows the app did not exit.</summary>
     private void HideToTray(bool notice)
     {
         if (!Visible)
@@ -1188,10 +1180,10 @@ public sealed class MainWindow : Form
         }
     }
 
-    /// <summary>The single way back from the tray/minimized state: clears click-through/overlay first (트레이
-    /// 복원 = 온전한 UI — [2차] F3 승계), shows the window again (tray-hidden = <c>Visible=false</c>), returns a
-    /// Minimized state to Normal, activates, and re-pushes the mirror layout (the DWM destination was hidden —
-    /// R2 재피팅). No-op parts are safe when already visible, so global hotkeys route here unconditionally.</summary>
+    /// <summary>The single way back from the tray/minimized state: clears click-through/overlay first (a tray
+    /// restore must return a fully usable window), shows the window again (tray-hidden = <c>Visible=false</c>),
+    /// returns a Minimized state to Normal, activates, and re-pushes the mirror layout (the DWM destination was
+    /// hidden). No-op parts are safe when already visible, so global hotkeys route here unconditionally.</summary>
     private void RestoreFromTray()
     {
         if (_clickThrough)
@@ -1203,10 +1195,10 @@ public sealed class MainWindow : Form
         if (WindowState == FormWindowState.Minimized)
             WindowState = FormWindowState.Normal;
         Activate();
-        _mirror.UpdateLayout(MirrorHostPhysical()); // R2: destination 숨김 동안의 상태 드리프트 방지 재피팅
+        _mirror.UpdateLayout(MirrorHostPhysical()); // re-fit — guards against layout drift while the destination was hidden
     }
 
-    /// <summary>Real application exit (tray "종료" — V2-E3): bypasses the close=tray policy in
+    /// <summary>Real application exit (tray exit command): bypasses the close-to-tray policy in
     /// <see cref="OnFormClosing"/> so the close still funnels through <c>FormClosed</c> →
     /// <c>SumboAppContext.ExitApp</c> (single exit path).</summary>
     internal void CloseForExit()
@@ -1215,17 +1207,17 @@ public sealed class MainWindow : Form
         Close();
     }
 
-    /// <summary>V2-E3 트레이 상주: a user close GESTURE (크롬 X · Alt+F4 · 시스템 메뉴/taskbar 닫기 = SC_CLOSE)
-    /// retires to the tray instead of exiting. Everything else — a raw external <c>WM_CLOSE</c> (taskkill·스크립트),
-    /// Windows shutdown/logoff, task manager, <see cref="CloseForExit"/> — keeps closing for real, so automation
-    /// and the OS can always end the process gracefully. The gesture flag (not <see cref="Form.CloseReason"/>) is
-    /// the discriminator: a cancelled close leaves <c>CloseReason.UserClosing</c> behind, which would misroute the
-    /// next raw <c>WM_CLOSE</c> to the tray ([5차] CODEX 실측 + 순서 의존 재현).</summary>
+    /// <summary>A user close GESTURE (chrome X · Alt+F4 · system menu/taskbar close = SC_CLOSE) retires to the
+    /// tray instead of exiting. Everything else — a raw external <c>WM_CLOSE</c> (taskkill/scripts), Windows
+    /// shutdown/logoff, task manager, <see cref="CloseForExit"/> — keeps closing for real, so automation and the
+    /// OS can always end the process gracefully. The gesture flag (not the form's <c>CloseReason</c>) is the
+    /// discriminator: a cancelled close leaves <c>CloseReason.UserClosing</c> behind, which would misroute the
+    /// next raw <c>WM_CLOSE</c> to the tray.</summary>
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         base.OnFormClosing(e);
         bool gesture = _userCloseGesture;
-        _userCloseGesture = false; // 1회 소비 — 다음 close 판정을 오염시키지 않음
+        _userCloseGesture = false; // consume once — must not contaminate the next close decision
         if (!e.Cancel && gesture && e.CloseReason == CloseReason.UserClosing && !_exitRequested)
         {
             e.Cancel = true;
@@ -1233,7 +1225,7 @@ public sealed class MainWindow : Form
         }
     }
 
-    // ── FR-08 그룹 순환 (V2-E1 — v1 CloneForm 그룹 로직의 단일 미러 재해석) ────
+    // ── Group cycling — rotates the mirror source through saved targets ──
 
     private void OnGroupAddRequested(object? sender, EventArgs e)
     {
@@ -1256,12 +1248,12 @@ public sealed class MainWindow : Form
     {
         _group.SetInterval(seconds);
         if (_group.IsRunning)
-            _groupTimer.Interval = _group.IntervalSeconds * 1000; // 순환 중 간격 즉시 반영
+            _groupTimer.Interval = _group.IntervalSeconds * 1000; // apply the new interval immediately while cycling
         ReflectGroup();
     }
 
-    /// <summary>FR-08 시작/정지 토글 (v1 <c>ToggleGroupSwitch</c> :1197 재해석). 시작은 라이브 미러가 있어야 순환할
-    /// 소스가 있다 — 빈 그룹은 안내, 미러 없음은 no-op 게이트 (버튼은 hasMirror 게이트지만 핫키 경로 방어).</summary>
+    /// <summary>Start/stop toggle for group cycling. Starting requires a live mirror (something to rotate); an
+    /// empty group gets a notice, no mirror is a silent no-op (the panel button is gated, the hotkey path is not).</summary>
     private void ToggleGroupSwitch()
     {
         if (_group.IsRunning)
@@ -1299,9 +1291,9 @@ public sealed class MainWindow : Form
         ReflectGroup();
     }
 
-    /// <summary>Rotates the embedded mirror's source to the next group member every N seconds (FR-08 해석 α —
-    /// v1 <c>OnGroupTick</c> :1233 이식). 영역 드래그 중엔 스킵(진행 중 드래그를 다른 소스로 remap 방지); 미해결
-    /// 멤버는 1회 안내 후 스킵하고 전멸(한 바퀴 전건 실패) 시 정지 (v1 승계). 재타깃은 region/opacity 보존
+    /// <summary>Rotates the embedded mirror's source to the next group member every N seconds. Skipped during a
+    /// region drag (retargeting would remap the in-flight drag onto a different source); an unresolved member gets
+    /// one notice then is skipped, and a full lap of misses stops the cycle. Retargeting preserves region/opacity
     /// (<see cref="MirrorSurface.RetargetPreserving"/>).</summary>
     private void OnGroupTick(object? sender, EventArgs e)
     {
@@ -1311,7 +1303,7 @@ public sealed class MainWindow : Form
         TargetSpec? next = _group.Next();
         if (next is null)
         {
-            StopGroupSwitch(); // 빈 그룹 — 순환할 것 없음
+            StopGroupSwitch(); // empty group — nothing to rotate
             return;
         }
 
@@ -1322,7 +1314,7 @@ public sealed class MainWindow : Form
         }
         catch (Exception)
         {
-            return; // 일시적 열거 실패 — 다음 tick 재시도
+            return; // transient enumeration failure — retry next tick
         }
 
         WindowInfo? target = WindowMatcher.Resolve(next, windows);
@@ -1331,7 +1323,7 @@ public sealed class MainWindow : Form
             _groupMissCount++;
             if (_groupMissCount >= _group.Count)
             {
-                StopGroupSwitch(); // 전멸 lap — idle 타이머 spin 대신 정지 (v1 :1265 승계)
+                StopGroupSwitch(); // every member missed for a full lap — stop instead of spinning idle
                 _groupMissCount = 0;
                 MessageBox.Show(
                     this,
@@ -1352,16 +1344,16 @@ public sealed class MainWindow : Form
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
-            return; // 부분 miss — 이 멤버 스킵, 순환 유지
+            return; // partial miss — skip this member, keep cycling
         }
 
-        _groupMissCount = 0; // 해결된 멤버 = 전멸 lap 카운터 리셋
-        if (_mirror.RetargetPreserving(target, out _)) // 성공 → Changed → OnMirrorChanged → SyncPanels (target 라벨 갱신)
-            _groupMissingWarned = false;               // 성공 hop = 1회 안내 재무장
+        _groupMissCount = 0; // a resolved member resets the full-lap miss counter
+        if (_mirror.RetargetPreserving(target, out _)) // success → Changed → OnMirrorChanged → SyncPanels (target label refresh)
+            _groupMissingWarned = false;               // a successful hop re-arms the one-time notice
     }
 
-    /// <summary>Builds a durable target spec for the current mirror source (group member / profile target — v1
-    /// <c>CurrentTargetSpec</c> :1152 이식, <see cref="CaptureProfile"/> 와 공용).</summary>
+    /// <summary>Builds a durable target spec for the current mirror source (group members and profile targets
+    /// share this shape).</summary>
     private TargetSpec CurrentTargetSpec()
     {
         WindowInfo id = WindowEnumerator.Describe(_mirror.TargetHandle);
@@ -1385,17 +1377,17 @@ public sealed class MainWindow : Form
         _groupPanel.ReflectGroup(_mirror.HasMirror, titles, _group.IsRunning, _group.IntervalSeconds);
     }
 
-    // ── 설정 패널 (V2-E1 — v1 설정 창 흡수, 셸이 CloneManager 설정 SSOT 중개) ────
+    // ── Settings panel — the shell brokers CloneManager's settings state ──
 
     private void OnSettingsLanguageSelected(object? sender, string language)
     {
         _manager.SetLanguage(language);                   // LanguageChanged → ApplyStrings fan-out re-labels every panel
-        _settingsPanel.ReflectSettings(_manager.Current); // relabel 후 세그먼트 선택 재확정
+        _settingsPanel.ReflectSettings(_manager.Current); // re-assert the segment selection after relabeling
     }
 
     private void OnSettingsStartWithWindowsToggled(object? sender, bool on)
     {
-        _manager.SetStartWithWindows(on);                 // 정책 차단 가능 — 권위 상태로 재반영 (v1 설정 창 승계)
+        _manager.SetStartWithWindows(on);                 // the request can be denied by policy — reflect the authoritative state back
         _settingsPanel.ReflectSettings(_manager.Current);
     }
 
@@ -1420,7 +1412,7 @@ public sealed class MainWindow : Form
 
         if (_uiHidden)
         {
-            // 오버레이 (이월 ①): 클라이언트 전체 = 미러 캔버스 — rail/패널/타이틀 없음, 크롬 버튼 히트 제거.
+            // Overlay: the whole client is the mirror canvas — no rail/panel/title, no chrome-button hit zones.
             _btnMin = _btnMax = _btnClose = Rectangle.Empty;
             _mirrorRect = new Rectangle(0, 0, w, h);
             _mirror.UpdateLayout(MirrorHostPhysical());
@@ -1449,7 +1441,7 @@ public sealed class MainWindow : Form
             contentRight = railX;
         }
 
-        // v2: everything left of the panel is the mirror canvas — bare form surface, no child controls.
+        // Everything left of the panel is the mirror canvas — bare form surface, no child controls.
         int mx = Grip + Theme.Pad;
         int my = bodyTop + Theme.Pad;
         _mirrorRect = new Rectangle(
@@ -1485,7 +1477,7 @@ public sealed class MainWindow : Form
 
     /// <summary>
     /// Maps the logical <see cref="_mirrorRect"/> (minus the drawn frame margin) to a physical-pixel host rect for
-    /// the DWM <c>rcDestination</c> (FR-11 — DWM wants physical client coords). <see cref="MirrorSurface"/> letterboxes
+    /// the DWM <c>rcDestination</c> (DWM wants physical client coordinates). <see cref="MirrorSurface"/> letterboxes
     /// the source inside this rect.
     /// </summary>
     private RECT MirrorHostPhysical()
@@ -1505,8 +1497,8 @@ public sealed class MainWindow : Form
             py + Math.Max(margin + 1, ph - margin));
     }
 
-    /// <summary>Logical-client → physical-pixel scale (GetClientRect vs ClientSize — FR-11). Shared by the DWM host
-    /// rect and the region-drag commit so both sides of the dest-coordinate mapping agree ([2차] F2).</summary>
+    /// <summary>Logical-client → physical-pixel scale (GetClientRect vs ClientSize). Shared by the DWM host rect
+    /// and the region-drag commit so both sides of the dest-coordinate mapping agree.</summary>
     private (double Sx, double Sy) ClientScale()
     {
         int physW = ClientSize.Width, physH = ClientSize.Height;
@@ -1530,7 +1522,7 @@ public sealed class MainWindow : Form
             view.ApplyStrings(_loc);
         _rail.UpdateTooltips(RailItems());
 
-        // FR-10 미러 우클릭 메뉴 라벨 (기존 키 재사용 — 패널과 동일 어휘)
+        // Context-menu labels reuse the panel vocabulary (same localization keys).
         _ctxTarget.Text = _loc.Get(LocKeys.Menu_Target);
         _ctxStop.Text = _loc.Get(LocKeys.Main_StopMirror);
         _ctxRegion.Text = _loc.Get(LocKeys.Menu_Region_Select);
@@ -1559,7 +1551,7 @@ public sealed class MainWindow : Form
 
         if (_uiHidden)
         {
-            DrawMirrorArea(g); // 오버레이: 타이틀/로고/버튼 없이 미러 프레임만 (이월 ①)
+            DrawMirrorArea(g); // overlay: mirror frame only — no title/logo/buttons
             return;
         }
 
@@ -1579,10 +1571,10 @@ public sealed class MainWindow : Form
         DrawMirrorArea(g);
     }
 
-    /// <summary>Paints the mirror canvas frame on the FORM surface (no child control here — DWM 게이트). With a live
-    /// mirror the thumbnail composites over the inner area, leaving the accent frame visible around it; when idle a
-    /// hint tells the user to pick a target from the panel (or the PickWindow hotkey). The ring honors the 테두리
-    /// 표시 toggle (V2-B, FR-15 드로우 절반 — visual only, the reserved margin stays).</summary>
+    /// <summary>Paints the mirror canvas frame on the FORM surface (no child control here — the DWM thumbnail
+    /// composites over children). With a live mirror the thumbnail composites over the inner area, leaving the
+    /// accent frame visible around it; when idle a hint tells the user to pick a target from the panel (or the
+    /// PickWindow hotkey). The ring honors the border toggle — visual only, the reserved margin stays.</summary>
     private void DrawMirrorArea(Graphics g)
     {
         if (_mirrorRect.Width <= 0 || _mirrorRect.Height <= 0)
@@ -1620,7 +1612,7 @@ public sealed class MainWindow : Form
     {
         if (_regionDragging)
         {
-            // FR-02 rubber band — erase the previous XOR frame, then draw at the new extent (v1 승계).
+            // Rubber band: erase the previous XOR frame, then draw at the new extent.
             EraseDragFrame();
             _dragCurrentClient = e.Location;
             _dragFrame = DragScreenRect();
@@ -1628,7 +1620,7 @@ public sealed class MainWindow : Form
             return;
         }
 
-        // FR-06 (V2-D): 전달 ON + 미러 위 = 이동도 소스로 (버튼 상태는 실제 마우스 상태를 따른다 — v1 :1380 승계)
+        // Forwarding ON + over the mirror: moves go to the source too (the button flag follows the real mouse state).
         if (TryForward(User32.WM_MOUSEMOVE, e,
                 new IntPtr((MouseButtons & MouseButtons.Left) != 0 ? MK_LBUTTON : 0)))
             return;
@@ -1648,12 +1640,12 @@ public sealed class MainWindow : Form
     {
         if (e.Button == MouseButtons.Left)
         {
-            if (_btnClose.Contains(e.Location)) { _userCloseGesture = true; Close(); return; } // 크롬 X = 사용자 제스처
+            if (_btnClose.Contains(e.Location)) { _userCloseGesture = true; Close(); return; } // chrome X = user close gesture
             if (_btnMax.Contains(e.Location)) { ToggleMaximize(); return; }
             if (_btnMin.Contains(e.Location)) { WindowState = FormWindowState.Minimized; return; }
 
-            // FR-02 (V2-C): armed select mode + press inside the mirror canvas = start the crop drag. Only the
-            // form surface gets here (children swallow their own mouse), so the rect check is the whole gate.
+            // Armed select mode + press inside the mirror canvas = start the crop drag. Only the form surface
+            // gets here (children swallow their own mouse), so the rect check is the whole gate.
             if (_regionSelecting && _mirrorRect.Contains(e.Location))
             {
                 _regionDragging = true;
@@ -1663,7 +1655,7 @@ public sealed class MainWindow : Form
                 return;
             }
 
-            // FR-06 (V2-D): 전달 ON + 미러 위 좌클릭 = 소스로 post (영역 선택이 위에서 우선 — v1 우선순위 승계)
+            // Forwarding ON + left click over the mirror = post to the source (region selection above takes priority).
             if (TryForward(User32.WM_LBUTTONDOWN, e, new IntPtr(MK_LBUTTON)))
                 return;
         }
@@ -1681,8 +1673,8 @@ public sealed class MainWindow : Form
         if (e.Button == MouseButtons.Left && TryForward(User32.WM_LBUTTONUP, e, IntPtr.Zero))
             return;
 
-        // FR-10 (V2-E1): 미러 위 우클릭 = 컨텍스트 메뉴. 통과 중엔 창이 입력을 못 받고, 영역 선택/드래그 중엔
-        // 그 조작이 우선 ([2차] Q5 표시 조건). 유휴 캔버스는 rail [대상 창] 패널로 안내(main.mirror.hint).
+        // Right click over a live mirror = context menu. During click-through the window receives no input, and an
+        // in-flight region select/drag takes priority; the idle canvas points at the targets panel instead.
         if (e.Button == MouseButtons.Right
             && _mirror.HasMirror && _mirrorRect.Contains(e.Location)
             && !_clickThrough && !_regionSelecting && !_regionDragging)
@@ -1702,7 +1694,8 @@ public sealed class MainWindow : Form
 
     protected override void OnMouseWheel(MouseEventArgs e)
     {
-        // FR-06: 전달 ON 이면 휠도 소스로 — 레터박스 마진에서 매핑이 실패해도 로컬로 흘리지 않고 소비 (v1 :1413 승계).
+        // Forwarding ON: the wheel goes to the source too — even when the mapping fails in the letterbox margin,
+        // consume it rather than scrolling locally.
         if (_clickForward && _mirror.HasMirror && _mirrorRect.Contains(e.Location))
         {
             TryForward(User32.WM_MOUSEWHEEL, e, new IntPtr(e.Delta << 16), wheel: true);
@@ -1713,7 +1706,7 @@ public sealed class MainWindow : Form
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        // ESC bails out of an armed / in-flight region selection (v1 승계; KeyPreview=true routes it here).
+        // ESC bails out of an armed / in-flight region selection (KeyPreview=true routes it here).
         if (e.KeyCode == Keys.Escape && (_regionSelecting || _regionDragging))
         {
             CancelRegionSelect();
@@ -1721,12 +1714,12 @@ public sealed class MainWindow : Form
             return;
         }
 
-        // ESC restores the UI from the overlay / click-through (B2 탈출 — 통과 중엔 포커스가 남아 있을 때만 유효,
-        // 확실한 탈출은 Ctrl+Alt+C 전역 핫키와 트레이 복원).
+        // ESC restores the UI from overlay / click-through — during click-through it only works while focus
+        // remains; the reliable exits are the global hotkey and tray restore.
         if (e.KeyCode == Keys.Escape && (_clickThrough || _uiHidden))
         {
             if (_clickThrough)
-                SetClickThrough(false); // 단일 route 가 UI 복원 동반
+                SetClickThrough(false); // the single route also restores the UI
             else
                 SetOverlayMode(false);
             e.Handled = true;
@@ -1738,7 +1731,7 @@ public sealed class MainWindow : Form
     private void ToggleMaximize()
     {
         if (_locked)
-            return; // FR-15 — 크롬 버튼 경로도 잠금 (WM_SYSCOMMAND swallow 와 세트)
+            return; // lock also blocks the chrome-button path (paired with the WM_SYSCOMMAND swallow)
         WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
     }
 
@@ -1751,11 +1744,11 @@ public sealed class MainWindow : Form
         if (WindowState != _lastWindowState)
         {
             bool enteredMinimized = WindowState == FormWindowState.Minimized;
-            _lastWindowState = WindowState; // 최소화/최대화/복원 전이 → 전체화면 세그먼트 등 패널 반영
+            _lastWindowState = WindowState; // minimize/maximize/restore transition → reflect the fullscreen segment
             SyncPanels();
 
-            // V2-E3 최소화=트레이: E2 에서 보존한 MinimizeToTray(§7.1, 기본 true)의 첫 실소비 지점.
-            // off = 현행 taskbar 최소화 유지. 명시적 설정 경로라 풍선 없음 (Q1 은 close 경로 한정).
+            // Minimize-to-tray setting; off keeps the plain taskbar minimize. An explicit setting drives this
+            // path, so no residency balloon (that is reserved for the close gesture).
             if (enteredMinimized && Visible && _manager.MinimizeToTray)
                 HideToTray(notice: false);
         }
@@ -1764,18 +1757,18 @@ public sealed class MainWindow : Form
     protected override void OnClientSizeChanged(EventArgs e)
     {
         base.OnClientSizeChanged(e);
-        // [2차] F2: 사용자 리사이즈만 preset 해제 — 내부(suppressed) 변경과 최소화(OS 축소)·최대화(전체화면
-        // 세그먼트가 별도 반영) 상태는 제외 (v1 :1740 최소화 가드의 확장).
+        // Only a user resize clears the preset — internal (suppressed) changes are excluded, as are minimize
+        // (an OS shrink) and maximize (the fullscreen segment reflects separately).
         if (_suppressPlacementEvents || WindowState != FormWindowState.Normal || _sizeMode is null)
             return;
         _sizeMode = null;
-        SyncPanels(); // preset→free 전이 1회만 (v1 WM_SIZE storm 가드 승계)
+        SyncPanels(); // reflect the preset→free transition once, not per WM_SIZE
     }
 
     protected override void OnMove(EventArgs e)
     {
         base.OnMove(e);
-        // [2차] F2: 사용자 이동 = 앵커 해제 (v1 OnMove :1752 승계). 최대화 전이도 Location 을 바꾸므로 Normal 한정.
+        // A user move clears the anchor. Maximize transitions also change Location, hence the Normal-only gate.
         if (_suppressPlacementEvents || _anchor is null || WindowState != FormWindowState.Normal)
             return;
         _anchor = null;
@@ -1785,19 +1778,19 @@ public sealed class MainWindow : Form
     protected override void OnResizeEnd(EventArgs e)
     {
         base.OnResizeEnd(e);
-        ReapplyAnchor(); // FR-04: 리사이즈 종료 후 앵커 모서리 재정렬 (이동 종료는 OnMove 가 이미 앵커를 해제 → no-op)
+        ReapplyAnchor(); // re-align to the anchor after a resize ends (a move end is a no-op — OnMove already cleared the anchor)
     }
 
     protected override void WndProc(ref Message m)
     {
-        // V2-E3 [5차] hotfix: 사용자 close 제스처(Alt+F4/시스템 메뉴/taskbar 닫기 = SC_CLOSE)를 여기서 마킹.
-        // WinForms 의 CloseReason 은 취소된 close 의 UserClosing 이 잔존해 뒤따르는 raw WM_CLOSE 를 오염시키는
-        // 순서 의존이 실측됐다(fresh=종료·SC_CLOSE 취소 후=잔류) — 이 플래그가 결정적 판별자다.
+        // Mark a user close gesture (Alt+F4 / system menu / taskbar close = SC_CLOSE) here. WinForms' CloseReason
+        // is order-dependent — a cancelled close leaves UserClosing behind and contaminates a following raw
+        // WM_CLOSE — so this flag is the deterministic discriminator.
         if (m.Msg == User32.WM_SYSCOMMAND && (int)(m.WParam.ToInt64() & 0xFFF0) == ScClose)
             _userCloseGesture = true;
 
-        // FR-15 위치·크기 잠금: 사용자발 이동/리사이즈/최대화 시스템 명령 삼킴 (v1 :1652 이식 — suppressed 내부
-        // Bounds 설정은 SYSCOMMAND 를 타지 않아 비영향).
+        // Position/size lock: swallow user-initiated move/resize/maximize system commands. Internal (suppressed)
+        // Bounds assignments do not go through SYSCOMMAND, so they are unaffected.
         if (_locked && m.Msg == User32.WM_SYSCOMMAND)
         {
             int command = (int)(m.WParam.ToInt64() & 0xFFF0);
@@ -1813,12 +1806,12 @@ public sealed class MainWindow : Form
             return;
         }
 
-        // FR-11 §8.6: moved to a different-DPI monitor. WinForms rescales the window on base.WndProc; re-run layout
+        // Moved to a different-DPI monitor. WinForms rescales the window on base.WndProc; re-run layout
         // afterward so the mirror rect + its physical rcDestination are recomputed for the new DPI.
         if (m.Msg == User32.WM_DPICHANGED)
         {
-            // [2차] F2: WinForms 의 DPI 리스케일이 OnClientSizeChanged/OnMove 를 발화시켜 preset/anchor 를
-            // 지우지 않도록 감싼다 (v1 :1661-1684 stuck-flag 하드닝 승계 — try/finally).
+            // Suppress so the DPI rescale's OnClientSizeChanged/OnMove don't clear the preset/anchor;
+            // try/finally guards against a stuck flag.
             try
             {
                 _suppressPlacementEvents = true;
@@ -1830,7 +1823,7 @@ public sealed class MainWindow : Form
             }
             DoLayout();
             if (_sizeMode is ClientSizeMode mode && WindowState == FormWindowState.Normal)
-                ApplyMirrorSizeMode(mode); // 새 모니터 DPI/작업영역 기준 재산출 (v1 :1677 승계 — ReapplyAnchor 포함)
+                ApplyMirrorSizeMode(mode); // recompute against the new monitor's DPI/work area (includes ReapplyAnchor)
             else
                 ReapplyAnchor();
             return;
@@ -1844,7 +1837,7 @@ public sealed class MainWindow : Form
         Point p = PointToClient(Cursor.Position);
         int w = ClientSize.Width, h = ClientSize.Height;
 
-        if (!_locked && WindowState != FormWindowState.Maximized) // FR-15: 잠금 = 리사이즈 그립 제거
+        if (!_locked && WindowState != FormWindowState.Maximized) // lock removes the resize grips
         {
             bool l = p.X < Grip, r = p.X >= w - Grip, t = p.Y < Grip, b = p.Y >= h - Grip;
             if (t && l) return User32.HTTOPLEFT;
@@ -1858,13 +1851,13 @@ public sealed class MainWindow : Form
         }
 
         if (_uiHidden)
-            return 0; // 오버레이: 타이틀 스트립 없음 — 창 이동은 UI 복원 후 (그립 리사이즈만 유지)
+            return 0; // overlay: no title strip — moving requires restoring the UI first (grip resize stays)
 
         if (p.Y < TitleH)
         {
             if (_btnMin.Contains(p) || _btnMax.Contains(p) || _btnClose.Contains(p))
                 return User32.HTCLIENT; // let the mouse handlers process the window buttons
-            // FR-15: 잠금 중 캡션 드래그·더블클릭 최대화 차단 — 커스텀 크롬은 원천 gate 가 v1 사후 remap(:1691) 등가
+            // Lock blocks caption drag and double-click maximize at the source.
             return _locked ? User32.HTCLIENT : User32.HTCAPTION;
         }
         return 0; // leave the default (HTCLIENT) for the body
@@ -1909,9 +1902,9 @@ public sealed class MainWindow : Form
         _sourceWatch.Stop();
         _sourceWatch.Dispose();
         _mirror.Dispose(); // unregister the DWM thumbnail
-        _appIcon.Dispose(); // AppIcons.Load 소유권 — 폼 해체 후 해제 ([5차] 조건 3)
+        _appIcon.Dispose(); // this window owns the AppIcons.Load result — released after the form is torn down
 
-        // Cards + icon cache are torn down by TargetsPanel.Dispose (form dispose chain) in the F2 ownership order:
+        // Cards + icon cache are torn down by TargetsPanel.Dispose (form dispose chain) in ownership order:
         // cards (image referencers) first, provider (image owner) last — the shell no longer touches either.
 
         base.OnFormClosed(e);

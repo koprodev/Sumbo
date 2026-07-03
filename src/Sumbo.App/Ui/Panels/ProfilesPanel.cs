@@ -8,10 +8,10 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 프로필 panel (V2-C, FR-13): saves the current mirror setup under a name and manages the saved list
+/// The profiles panel: saves the current mirror setup under a name and manages the saved list
 /// (apply / delete). Pure view — each intent is an event the SHELL routes to <c>ProfileService</c>/<c>MirrorSurface</c>;
-/// the saved list is pushed via <see cref="SetProfiles"/>. Save needs a live mirror; APPLY does not (v1 승계 —
-/// "save needs a live clone; load does not"): applying re-resolves the target and starts a fresh mirror.
+/// the saved list is pushed via <see cref="SetProfiles"/>. Save needs a live mirror; APPLY does not:
+/// applying re-resolves the target and starts a fresh mirror.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class ProfilesPanel : PanelView
@@ -25,13 +25,13 @@ internal sealed class ProfilesPanel : PanelView
     private readonly List<SavedItemRow> _rows = new();
     private readonly Label _emptyNote = new();
 
-    /// <summary>현재 구성 저장 — the shell prompts for a name, captures and upserts.</summary>
+    /// <summary>Save-current-setup button — the shell prompts for a name, captures and upserts.</summary>
     public event EventHandler? SaveRequested;
 
-    /// <summary>Saved-row 적용 — the shell resolves the target and restores the profile onto the mirror.</summary>
+    /// <summary>Saved-row apply — the shell resolves the target and restores the profile onto the mirror.</summary>
     public event EventHandler<Profile>? ApplyRequested;
 
-    /// <summary>Saved-row 삭제 — destructive; the shell confirms before touching the store.</summary>
+    /// <summary>Saved-row delete — destructive; the shell confirms before touching the store.</summary>
     public event EventHandler<Profile>? DeleteRequested;
 
     public ProfilesPanel(LocalizationCatalog loc)
@@ -64,7 +64,7 @@ internal sealed class ProfilesPanel : PanelView
         Controls.Add(_list);
     }
 
-    /// <summary>Shell → panel: only 저장 tracks the live mirror — applying a profile re-resolves its own target.</summary>
+    /// <summary>Shell → panel: only Save tracks the live mirror — applying a profile re-resolves its own target.</summary>
     public void ReflectMirror(bool hasMirror) => _saveBtn.Enabled = hasMirror;
 
     /// <summary>Shell → panel: rebuilds the saved-profile rows from the store snapshot.</summary>
@@ -107,7 +107,7 @@ internal sealed class ProfilesPanel : PanelView
         _rows.Clear();
     }
 
-    // ── Layout ── (RegionPanel metrics; the saved list fills the rest and scrolls)
+    // ── Layout ── (the saved list fills the rest and scrolls)
 
     protected override void OnLayout(LayoutEventArgs levent)
     {

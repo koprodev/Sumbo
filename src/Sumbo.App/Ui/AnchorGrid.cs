@@ -6,10 +6,9 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// The position-snap picker (디자인샘플.png의 "위치 고정") — a grid of anchor cells, each an owner-drawn mini-frame
-/// icon with a label, laid out as the mockup: row0 = 해제/좌상/상/우상, row1 = 좌/가운데/우, row2 = 좌하/하/우하.
-/// The selected cell is blue-filled. Raises <see cref="SelectedIndexChanged"/>. (Wired to <c>SnapAnchor</c> in M6-C;
-/// "가운데" is a new center option reserved for that cycle.)
+/// Position-snap picker: a grid of owner-drawn anchor cells (mini-frame icon + label) laid out in rows of 4/3/3
+/// (none/top row, middle row, bottom row). The selected cell fills with the accent color.
+/// Raises <see cref="SelectedIndexChanged"/>.
 /// </summary>
 internal sealed class AnchorGrid : Control
 {
@@ -86,7 +85,7 @@ internal sealed class AnchorGrid : Control
         return -1;
     }
 
-    // V2-D 이월 ②: the owner-drawn surface must reflect Enabled itself (no system disabled rendering).
+    // Owner-drawn surface must repaint on Enabled changes; there is no system disabled rendering.
     protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -129,7 +128,7 @@ internal sealed class AnchorGrid : Control
 
         if (kind == AnchorKind.None)
         {
-            // four corner ticks = "released"
+            // Four corner ticks read as "released" (no anchor).
             int t = 5;
             g.DrawLine(pen, frame.Left, frame.Top + t, frame.Left, frame.Top);
             g.DrawLine(pen, frame.Left, frame.Top, frame.Left + t, frame.Top);

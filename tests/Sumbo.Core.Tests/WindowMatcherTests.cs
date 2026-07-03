@@ -92,7 +92,7 @@ public class WindowMatcherTests
     [Fact]
     public void Resolve_HandleMatchBy_FallsThroughToCapturedIdentity()
     {
-        // MatchBy.Handle is volatile (§7.4) — a Handle spec is not resolved by handle; it must still
+        // Window handles are volatile — a Handle spec is never resolved by handle; it must still
         // resolve gracefully via the captured title tier.
         var spec = new TargetSpec { MatchBy = MatchBy.Handle, Value = "0x1234", CapturedTitle = "Zoom" };
         var windows = new List<WindowInfo> { Win("Zoom Meeting", "zoom") };

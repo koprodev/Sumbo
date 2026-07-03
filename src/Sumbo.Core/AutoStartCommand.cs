@@ -4,10 +4,9 @@ using System.IO;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Builds and compares the Windows "Run" command string for launch-at-startup (FR-14, §7.1
-/// <c>startWithWindows</c>). Kept as a pure, injectable helper — separate from the Registry side effect in
-/// the App (<c>AutoStartRegistrar</c>) — so the quoting/normalization that guards against space-containing
-/// install paths (e.g. <c>C:\Program Files\...</c>) is unit-testable (PEER F1 HIGH).
+/// Builds and compares the Windows "Run" key command string for launch-at-startup. Kept as a pure helper —
+/// separate from the Registry side effect in the App — so the quoting/normalization that guards against
+/// space-containing install paths (e.g. <c>C:\Program Files\...</c>) is unit-testable.
 /// </summary>
 public static class AutoStartCommand
 {

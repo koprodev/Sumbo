@@ -6,12 +6,10 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 설정(Settings) panel (V2-E1 — v1 설정 창 흡수): the language + startup/tray globals live in the embedded
-/// side panel (Q3 확정 — 언어+시작만; a defaults group is deferred — 재도입 시점 = 사용자 별도 결정, V2-E2 [3차]
-/// 수렴. <c>Settings.Defaults</c> 자체는 초기 opacity/AOT 시드로 계속 소비된다). Pure view: it raises intent events the
-/// shell routes to <see cref="CloneManager"/>'s setters, and applied state comes back through
-/// <see cref="ReflectSettings"/> under the <see cref="_syncing"/> guard (programmatic setters re-raise change events —
-/// DisplayPanel 패턴 승계). Language re-labels ride the shell's <c>ApplyStrings</c> fan-out — no self-subscription.
+/// The settings panel: the language + startup/tray globals live in the embedded side panel.
+/// Pure view: it raises intent events the shell routes to <see cref="CloneManager"/>'s setters, and applied state
+/// comes back through <see cref="ReflectSettings"/> under the <see cref="_syncing"/> guard (programmatic setters
+/// re-raise change events). Language re-labels ride the shell's <c>ApplyStrings</c> fan-out — no self-subscription.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class SettingsPanel : PanelView

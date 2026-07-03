@@ -5,7 +5,7 @@ namespace Sumbo.Core;
 /// <summary>
 /// Pure geometry helper: fits a source rectangle inside a host area while
 /// preserving the source aspect ratio (centered / letterboxed). UI-independent
-/// so it is unit-testable without Win32 (요건정의서 §14.1 좌표 변환).
+/// so it is unit-testable without Win32.
 /// </summary>
 public static class ThumbnailLayout
 {

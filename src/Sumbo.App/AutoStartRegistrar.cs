@@ -8,8 +8,8 @@ using Sumbo.Core;
 namespace Sumbo.App;
 
 /// <summary>
-/// Registers / unregisters "launch at Windows startup" (FR-14, §7.1 <c>startWithWindows</c>) via the
-/// per-user HKCU <c>...\CurrentVersion\Run</c> key — no admin rights required (contrast: a machine-wide
+/// Registers / unregisters "launch at Windows startup" via the per-user HKCU
+/// <c>...\CurrentVersion\Run</c> key — no admin rights required (contrast: a machine-wide
 /// HKLM entry or a Startup-folder shortcut). The command string (quoting/normalization that survives
 /// space-containing install paths) is built by the pure <see cref="AutoStartCommand"/>; this type only
 /// performs the Registry side effect.
@@ -22,12 +22,12 @@ internal sealed class AutoStartRegistrar
 
     /// <summary>
     /// Writes (enabled) or removes (disabled) the Run entry. Throws on a policy-blocked Registry or when the
-    /// executable path can't be resolved — the caller reverts the setting and notifies the user (PEER F2).
+    /// executable path can't be resolved — the caller reverts the setting and notifies the user.
     /// </summary>
     public void Set(bool enabled)
     {
-        // Neutral (English) technical detail: this surfaces as the {0} inside the localized auto-start-failed
-        // dialog, so it must not hardcode one UI language (FR-16). It only appears on a policy-locked Registry.
+        // This message surfaces as the {0} inside the localized auto-start-failed dialog, so it stays
+        // neutral English rather than hardcoding one UI language.
         using RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true)
             ?? throw new InvalidOperationException("Cannot open the HKCU Run registry key.");
 
@@ -50,8 +50,8 @@ internal sealed class AutoStartRegistrar
             if (enabled && exe is null)
                 return; // can't determine the executable — leave any existing entry untouched
 
-            // Read first (no write handle, no key creation side effect) to decide whether a change is even
-            // needed; only open the key writable when we actually have to write/delete (PEER LOW Finding 3).
+            // Read first (no write handle, no key-creation side effect) to decide whether a change is even
+            // needed; only open the key writable when we actually have to write/delete.
             bool needsWrite;
             using (RegistryKey? readKey = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false))
             {

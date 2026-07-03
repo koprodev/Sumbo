@@ -25,7 +25,7 @@ public class WindowPlacementTests
         => Assert.Equal((1440, 405), WindowPlacement.ComputeAnchoredLocation(SnapAnchor.Right, W, H, WaL, WaT, WaR, WaB));
 
     [Fact]
-    public void Anchor_Center_CentersBothAxes() // M6-C 가운데
+    public void Anchor_Center_CentersBothAxes()
         => Assert.Equal((720, 405), WindowPlacement.ComputeAnchoredLocation(SnapAnchor.Center, W, H, WaL, WaT, WaR, WaB));
 
     [Fact]

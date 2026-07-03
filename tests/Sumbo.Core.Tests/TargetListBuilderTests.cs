@@ -51,7 +51,7 @@ public class TargetListBuilderTests
     [Fact]
     public void Query_MatchesExeFileName_NotJustTitle()
     {
-        // "메모장" title doesn't contain "notepad", but its exe does.
+        // The Korean-titled Notepad window has no "notepad" in its title, but its exe name matches.
         var result = TargetListBuilder.Filter(Sample, "notepad");
         Assert.Single(result);
         Assert.Equal("메모장", result[0].Title);

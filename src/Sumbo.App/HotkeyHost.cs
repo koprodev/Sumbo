@@ -8,14 +8,14 @@ using Sumbo.Native;
 namespace Sumbo.App;
 
 /// <summary>
-/// A single message-only window that owns all global hotkeys (FR-09, §6.4) for the whole process and
+/// A single message-only window that owns all global hotkeys for the whole process and
 /// raises <see cref="HotkeyPressed"/> when one fires.
 /// <para>
 /// Centralization is mandatory: a global chord can only be registered on one HWND at a time — a second
 /// <see cref="User32.RegisterHotKey"/> for the same chord fails with
-/// <c>ERROR_HOTKEY_ALREADY_REGISTERED (1409)</c> (PEER 실측). So UI windows never register hotkeys
+/// <c>ERROR_HOTKEY_ALREADY_REGISTERED (1409)</c>. So UI windows never register hotkeys
 /// themselves; this host owns them and <see cref="CloneManager"/> raises <c>HotkeyRouted</c> for the main
-/// window (a message-only HWND also survives click-through/UI-hidden states — FR-07 탈출 생존).
+/// window (a message-only HWND also keeps the escape hotkeys alive while the UI is click-through or hidden).
 /// </para>
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -35,7 +35,7 @@ public sealed class HotkeyHost : NativeWindow, IDisposable
     {
         CreateHandle(new CreateParams
         {
-            Caption = "SumboHotkeyHost",
+            Caption = "SumboHotkeyHost", // fixed caption — external tooling discovers this window by name
             Parent = new IntPtr(HwndMessage),
         });
 

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Sumbo.Core;
 
-/// <summary>Persisted region for a profile (§7.2 <c>region</c>). <c>Enabled=false</c> ⇒ full window (no clip).</summary>
+/// <summary>Persisted region for a profile. <c>Enabled=false</c> ⇒ full window (no clip).</summary>
 public sealed record ProfileRegion
 {
     public bool Enabled { get; init; }
@@ -31,7 +31,7 @@ public sealed record ProfileRegion
         : null;
 }
 
-/// <summary>Persisted window placement (§7.2 <c>placement</c>). Screen-pixel bounds + monitor index + anchor.</summary>
+/// <summary>Persisted window placement: screen-pixel bounds + monitor index + anchor.</summary>
 public sealed record Placement
 {
     public int Monitor { get; init; }
@@ -43,8 +43,8 @@ public sealed record Placement
 }
 
 /// <summary>
-/// One saved clone configuration (FR-13, §7.2). A profile is a single clone window's target + view
-/// settings; multi-clone workspaces are a later schema extension (cycle② 결정 — 프로파일 1 = 복제창 1).
+/// One saved clone configuration: a single clone window's target + view settings (one profile = one
+/// clone window; the schema does not model multi-clone workspaces).
 /// </summary>
 public sealed record Profile
 {
@@ -56,18 +56,18 @@ public sealed record Profile
     public int Opacity { get; init; } = 100;
     public bool ClickThrough { get; init; }
 
-    /// <summary>FR-15 경계 강조 state (§7.2) — persisted per profile and restored by <c>ApplyProfile</c>.</summary>
+    /// <summary>Border-highlight state — persisted per profile and restored on apply.</summary>
     public bool ShowBorder { get; init; }
 
     /// <summary>
-    /// 항상 위에 표시 state (M6-C) — persisted per profile and restored by <c>ApplyProfile</c>.
-    /// <b>Defaults to true</b> so pre-M6-C profiles (missing the key) restore as always-on-top, matching the
-    /// historical fixed <c>TopMost=true</c> behaviour (STJ keeps this initializer when the key is absent).
+    /// Always-on-top state — persisted per profile and restored on apply. <b>Defaults to true</b> so
+    /// profiles saved without this key restore as always-on-top (System.Text.Json keeps the initializer
+    /// when the key is absent).
     /// </summary>
     public bool AlwaysOnTop { get; init; } = true;
 }
 
-/// <summary>Root of <c>profiles.json</c> (§7.2).</summary>
+/// <summary>Root of <c>profiles.json</c>.</summary>
 public sealed record ProfilesFile
 {
     public int Version { get; init; } = 1;

@@ -7,8 +7,8 @@ namespace Sumbo.Native;
 
 /// <summary>
 /// P/Invoke wrappers for window enumeration / identification (user32.dll).
-/// x64-only build: the 64-bit <c>GetWindowLongPtrW</c> export is used directly
-/// (PEER/계획 §6 — 32-bit GetWindowLong is intentionally not declared).
+/// x64-only build: the 64-bit <c>GetWindowLongPtrW</c> export is used directly;
+/// the 32-bit GetWindowLong is intentionally not declared.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class User32
@@ -22,14 +22,14 @@ public static class User32
     /// <summary>WS_EX_LAYERED — required for per-window alpha and click-through.</summary>
     public const long WS_EX_LAYERED = 0x00080000;
 
-    /// <summary>WS_EX_TRANSPARENT — the window is skipped for hit-testing (click-through, FR-07).</summary>
+    /// <summary>WS_EX_TRANSPARENT — the window is skipped for hit-testing (click-through).</summary>
     public const long WS_EX_TRANSPARENT = 0x00000020;
 
     // ── Window messages ──────────────────────────────────────────────────
     public const int WM_HOTKEY = 0x0312;
-    /// <summary>WM_DPICHANGED — top-level window moved to a monitor with a different DPI (FR-11, §8.6).</summary>
+    /// <summary>WM_DPICHANGED — top-level window moved to a monitor with a different DPI.</summary>
     public const int WM_DPICHANGED = 0x02E0;
-    /// <summary>WM_SYSCOMMAND / WM_NCHITTEST — used by FR-15 위치·크기 잠금 to block user move/resize/maximize.</summary>
+    /// <summary>WM_SYSCOMMAND / WM_NCHITTEST — used by the position/size lock to block user move/resize/maximize.</summary>
     public const int WM_SYSCOMMAND = 0x0112;
     public const int WM_NCHITTEST = 0x0084;
     // SC_* system commands (WM_SYSCOMMAND wParam, masked with 0xFFF0).
@@ -100,7 +100,7 @@ public static class User32
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-    // ── Global hotkeys (FR-09, §8.5) ─────────────────────────────────────
+    // ── Global hotkeys ───────────────────────────────────────────────────
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -109,7 +109,7 @@ public static class User32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    // ── Click forwarding (FR-06, §8.4) ───────────────────────────────────
+    // ── Click forwarding ─────────────────────────────────────────────────
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -141,13 +141,13 @@ public static class User32
     /// <summary>
     /// Client-area rectangle in <b>physical pixels</b> (origin 0,0), independent of WinForms
     /// logical scaling. Used to size the DWM <c>rcDestination</c> correctly under Per-Monitor V2
-    /// DPI so the clone stays sharp / offset-free on any monitor (FR-11, §8.6).
+    /// DPI so the clone stays sharp / offset-free on any monitor.
     /// </summary>
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
 
-    /// <summary>Window class name (FR-13 matchBy §7.4 — durable target identity).</summary>
+    /// <summary>Window class name — part of the durable target identity used for profile matching.</summary>
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 }

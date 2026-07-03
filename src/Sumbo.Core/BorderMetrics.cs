@@ -3,10 +3,10 @@ using System;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Pure geometry helpers for the FR-15 경계 강조(테두리) frame. The DWM destination is measured in physical
+/// Pure geometry helpers for the border-highlight frame. The DWM destination is measured in physical
 /// pixels while WinForms <c>OnPaint</c> draws in logical (DIP) client coordinates, so the border needs a
 /// physical-pixel inset (to reserve the frame margin) and a physical→logical rect transform (to paint the
-/// frame around the thumbnail). Kept UI-independent so the DPI math is unit-testable (요건정의서 §14.1).
+/// frame around the thumbnail). Kept UI-independent so the DPI math is unit-testable.
 /// </summary>
 public static class BorderMetrics
 {
@@ -25,7 +25,7 @@ public static class BorderMetrics
 
     /// <summary>
     /// Converts a physical-pixel rect (DWM client coords) to a logical WinForms client rect for painting, with
-    /// independent x/y scale and zero guards (PEER F4). Returns <c>(Left, Top, Width, Height)</c>; width/height
+    /// independent x/y scale and zero guards. Returns <c>(Left, Top, Width, Height)</c>; width/height
     /// are clamped to ≥ 0.
     /// </summary>
     public static (int Left, int Top, int Width, int Height) ToLogicalRect(

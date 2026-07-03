@@ -8,7 +8,7 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 영역 panel (V2-C, FR-02): arms the mirror-rect drag selection, clears the crop, saves the current region
+/// The region-crop panel: arms the mirror-rect drag selection, clears the crop, saves the current region
 /// under a name and manages the saved list (apply / delete). Pure view — each intent is an event the SHELL routes
 /// to <c>MirrorSurface</c>/<c>RegionStore</c>; applied state comes back through <see cref="ReflectMirror"/> and the
 /// saved list through <see cref="SetRegions"/> (the panel never touches the store or the mirror).
@@ -32,19 +32,19 @@ internal sealed class RegionPanel : PanelView
 
     private bool _hasMirror; // last reflected mirror state — saved rows apply onto a LIVE session only
 
-    /// <summary>영역 선택 — the shell arms the mirror-rect drag mode (the Ctrl+Alt+R hotkey's panel twin).</summary>
+    /// <summary>Select-region button — the shell arms the mirror-rect drag mode (the Ctrl+Alt+R hotkey's panel twin).</summary>
     public event EventHandler? SelectRequested;
 
-    /// <summary>영역 해제 — the shell clears the crop back to the full source.</summary>
+    /// <summary>Clear-region button — the shell clears the crop back to the full source.</summary>
     public event EventHandler? ClearRequested;
 
-    /// <summary>현재 영역 저장 — the shell prompts for a name and persists to the store.</summary>
+    /// <summary>Save-current-region button — the shell prompts for a name and persists to the store.</summary>
     public event EventHandler? SaveRequested;
 
-    /// <summary>Saved-row 적용 — the shell crops the live mirror to this region.</summary>
+    /// <summary>Saved-row apply — the shell crops the live mirror to this region.</summary>
     public event EventHandler<NamedRegion>? ApplyRequested;
 
-    /// <summary>Saved-row 삭제 — destructive; the shell confirms before touching the store.</summary>
+    /// <summary>Saved-row delete — destructive; the shell confirms before touching the store.</summary>
     public event EventHandler<NamedRegion>? DeleteRequested;
 
     public RegionPanel(LocalizationCatalog loc)
@@ -104,7 +104,7 @@ internal sealed class RegionPanel : PanelView
     }
 
     /// <summary>Shell → panel: enables the live-session actions and shows the applied crop readout. Saved rows stay
-    /// listed while idle but their 적용 is disabled — a region is session state (<c>Start</c> begins unclipped).</summary>
+    /// listed while idle but their apply is disabled — a region is session state (a new mirror starts unclipped).</summary>
     public void ReflectMirror(bool hasMirror, Sumbo.Core.Region? region)
     {
         _hasMirror = hasMirror;
@@ -165,7 +165,7 @@ internal sealed class RegionPanel : PanelView
         _rows.Clear();
     }
 
-    // ── Layout ── (DisplayPanel metrics; the saved list fills the rest and scrolls)
+    // ── Layout ── (the saved list fills the rest and scrolls)
 
     protected override void OnLayout(LayoutEventArgs levent)
     {
@@ -211,8 +211,8 @@ internal sealed class RegionPanel : PanelView
 }
 
 /// <summary>
-/// A saved-item row shared by the 영역/프로필 panels (V2-C): bounded, ellipsized name label + hit-separated
-/// 적용/삭제 buttons. [2차] F4: <c>ProfileChip</c>'s natural-width pill with a single <c>Selected</c> event fits
+/// A saved-item row shared by the region/profiles panels: bounded, ellipsized name label + hit-separated
+/// apply/delete buttons. <c>ProfileChip</c>'s natural-width pill with a single <c>Selected</c> event fits
 /// neither long names nor a destructive second action, so the list rows use explicit buttons instead.
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -220,10 +220,10 @@ internal sealed class SavedItemRow : Panel
 {
     private readonly Label _name = new();
 
-    /// <summary>적용 — text set by the owning panel (localized), enabled per the mirror state it reflects.</summary>
+    /// <summary>Apply button — text set by the owning panel (localized), enabled per the mirror state it reflects.</summary>
     public FlatButton ApplyButton { get; } = new();
 
-    /// <summary>삭제 — glyph-only; the shell confirms before deleting.</summary>
+    /// <summary>Delete button — glyph-only; the shell confirms before deleting.</summary>
     public FlatButton DeleteButton { get; } = new();
 
     public Color CornerBack { get; set; } = Theme.WindowBg;

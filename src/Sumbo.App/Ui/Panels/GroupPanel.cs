@@ -8,12 +8,11 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 그룹 순환(Group cycle) panel (V2-E1, FR-08): collects windows into a rotation group and starts/stops the
+/// The group-rotation panel: collects windows into a rotation group and starts/stops the
 /// timer that hops the mirror source through them (Ctrl+Alt+G). Pure view — each action is an intent the shell
 /// routes to its <c>GroupSwitcher</c> + timer + <c>MirrorSurface.RetargetPreserving</c>; state comes back through
-/// <see cref="ReflectGroup"/>. Membership is Add / Clear only this cycle (Q2 확정 — GroupSwitcher has no per-member
-/// remove and adding one is a Core change deferred to keep 무수정), so member rows are read-only (no delete button —
-/// [2차] CODEX: SavedItemRow's delete would misrepresent that). Member persistence stays 이월 (§8).
+/// <see cref="ReflectGroup"/>. Membership supports Add / Clear only (<c>GroupSwitcher</c> has no per-member
+/// remove), so member rows are read-only — a delete button would misrepresent that.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class GroupPanel : PanelView
@@ -34,16 +33,16 @@ internal sealed class GroupPanel : PanelView
     private bool _hasMirror;
     private LocalizationCatalog? _loc; // set by ApplyStrings (runs before any reflect) — start/stop caption source
 
-    /// <summary>현재 대상 그룹에 추가 — needs a live mirror; the shell adds its current source spec.</summary>
+    /// <summary>Add-current-target button — needs a live mirror; the shell adds its current source spec.</summary>
     public event EventHandler? AddCurrentRequested;
 
-    /// <summary>그룹 비우기 — clears members and stops rotation.</summary>
+    /// <summary>Clear-group button — clears members and stops rotation.</summary>
     public event EventHandler? ClearRequested;
 
-    /// <summary>순환 시작/정지 토글.</summary>
+    /// <summary>Start/stop rotation toggle.</summary>
     public event EventHandler? ToggleRunRequested;
 
-    /// <summary>순환 간격(초) 변경.</summary>
+    /// <summary>Rotation interval changed (seconds).</summary>
     public event EventHandler<int>? IntervalChanged;
 
     public GroupPanel()
@@ -106,7 +105,7 @@ internal sealed class GroupPanel : PanelView
         Controls.Add(_list);
     }
 
-    /// <summary>Shell → panel (SyncPanels): lightweight enable refresh only — 추가 needs a live mirror, 시작 needs a
+    /// <summary>Shell → panel (SyncPanels): lightweight enable refresh only — add needs a live mirror, start needs a
     /// live mirror + members. No member-row rebuild (avoids control churn on every mirror transition).</summary>
     public void ReflectMirror(bool hasMirror)
     {
@@ -130,8 +129,8 @@ internal sealed class GroupPanel : PanelView
         RefreshEnable();
     }
 
-    /// <summary>추가 = live mirror; 시작/정지 = members &amp;&amp; (running OR live mirror — starting needs a source to
-    /// retarget, stopping is always allowed); 비우기 = members.</summary>
+    /// <summary>Add = live mirror; start/stop = members &amp;&amp; (running OR live mirror — starting needs a source to
+    /// retarget, stopping is always allowed); clear = members.</summary>
     private void RefreshEnable()
     {
         _addBtn.Enabled = _hasMirror;
@@ -214,8 +213,8 @@ internal sealed class GroupPanel : PanelView
     }
 }
 
-/// <summary>A read-only group member row (V2-E1): ordinal + ellipsized title. No per-member action — membership is
-/// Add / Clear only this cycle (Q2 확정), so unlike <see cref="SavedItemRow"/> it carries no apply/delete button.</summary>
+/// <summary>A read-only group member row: ordinal + ellipsized title. No per-member action — membership is
+/// Add / Clear only, so unlike <see cref="SavedItemRow"/> it carries no apply/delete button.</summary>
 [SupportedOSPlatform("windows")]
 internal sealed class GroupMemberRow : Panel
 {

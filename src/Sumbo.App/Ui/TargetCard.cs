@@ -6,9 +6,8 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A selectable target-process card in the left column (디자인샘플.png 좌측 대상 목록): app icon tile + name + exe +
-/// a green "running" status. Selected → blue border + lighter fill. In M6-A these are static placeholders; the live
-/// window list (icons via WindowIconProvider, real enumeration) arrives in M6-B. Raises <see cref="Selected"/>.
+/// Selectable target-window card in the left column: app icon tile + name + exe + a green "running" status.
+/// Selected renders with an accent border and lighter fill. Raises <see cref="Selected"/>.
 /// </summary>
 internal sealed class TargetCard : CardPanel
 {
@@ -24,8 +23,8 @@ internal sealed class TargetCard : CardPanel
     public Color IconColor { get; set; } = Theme.Accent;
     public Image? IconImage { get; set; }
 
-    /// <summary>The window this card represents (M6-B). The provider owns <see cref="IconImage"/> — the card never
-    /// disposes it (F2 보완).</summary>
+    /// <summary>The window this card represents. <see cref="WindowIconProvider"/> owns <see cref="IconImage"/> —
+    /// the card must never dispose it.</summary>
     public Sumbo.Core.WindowInfo? Target { get; set; }
 
     public TargetCard()
@@ -87,8 +86,8 @@ internal sealed class TargetCard : CardPanel
             ? Width - 16 - ss.Width - 14 // status text + its green dot
             : Width - 16;
 
-        // ── Name + exe ── V2-B 겹침 폴리시: at 324px the status block starts at ~252 while the texts start at 72
-        // unbounded — bound them to the status block's left edge and ellipsize instead of colliding.
+        // ── Name + exe ── Width is capped at the status block's left edge and the text ellipsized (NoWrap +
+        // EllipsisCharacter) so long names never collide with the status.
         int textX = tile.Right + 14;
         float maxW = Math.Max(0f, statusLeft - 8 - textX);
         using var fmt = new StringFormat { FormatFlags = StringFormatFlags.NoWrap, Trimming = StringTrimming.EllipsisCharacter };

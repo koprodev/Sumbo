@@ -8,10 +8,10 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 정보(About) panel (V2-E1, FR-17 이월): product name + runtime version + slogan + an update-status note.
-/// FR-17 자동 업데이트는 미구현 승계(체크리스트v2.md §8) — the note states it is planned, no update action is wired.
+/// The about panel: product name + runtime version + slogan + an update-status note. Auto-update is not
+/// implemented — the note states it is planned, no update action is wired.
 /// Pure static view: no intent events, no <c>ReflectMirror</c> (nothing depends on the mirror state). The version is
-/// read from the running assembly and follows the csproj <c>&lt;Version&gt;</c> SSOT (배포 cycle — 1.0.0).
+/// read from the running assembly and follows the csproj <c>&lt;Version&gt;</c> as the single source of truth.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class AboutPanel : PanelView
@@ -50,8 +50,8 @@ internal sealed class AboutPanel : PanelView
         _updateNote.Text = loc.Get(LocKeys.Main_About_UpdateNote);
     }
 
-    /// <summary>Runtime assembly version — informational (SourceLink commit suffix stripped) with the file version as
-    /// fallback. Reflects the csproj <c>&lt;Version&gt;</c> SSOT (InformationalVersion — 배포 cycle).</summary>
+    /// <summary>Runtime assembly version — the informational version (SourceLink commit suffix stripped) with the
+    /// assembly version as fallback. Reflects the csproj <c>&lt;Version&gt;</c>.</summary>
     private static string ResolveVersion()
     {
         try

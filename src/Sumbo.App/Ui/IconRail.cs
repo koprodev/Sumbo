@@ -10,9 +10,9 @@ namespace Sumbo.App.Ui;
 internal sealed record RailItem(string Id, string Glyph, string Tooltip);
 
 /// <summary>
-/// The far-right vertical icon bar (디자인샘플.png 우측 rail). Clicking an icon selects it (blue wash + accent bar)
-/// and raises <see cref="ItemClicked"/> — the shell uses this to expand the matching side panel (사용자 원문:
-/// "아이콘 메뉴 클릭시 메뉴 확장"). Owner-drawn; the active item shows a soft-blue rounded square and a right-edge bar.
+/// Far-right vertical icon bar. Clicking an icon selects it and raises <see cref="ItemClicked"/>; the shell uses
+/// this to expand the matching side panel. Owner-drawn; the active item shows a soft-blue rounded square and a
+/// right-edge accent bar.
 /// </summary>
 internal sealed class IconRail : Control
 {
@@ -52,7 +52,7 @@ internal sealed class IconRail : Control
 
     public string? SelectedId => _selectedIndex >= 0 && _selectedIndex < _items.Count ? _items[_selectedIndex].Id : null;
 
-    /// <summary>Refreshes tooltips after a language switch (called by the shell's ApplyStrings).</summary>
+    /// <summary>Refreshes tooltip strings after a language switch.</summary>
     public void UpdateTooltips(IReadOnlyList<RailItem> items)
     {
         for (int i = 0; i < items.Count && i < _items.Count; i++)
@@ -123,7 +123,7 @@ internal sealed class IconRail : Control
 
             if (selected)
             {
-                // accent bar hugging the right edge of the rail
+                // Accent bar hugging the right edge of the rail.
                 using var bar = new SolidBrush(Theme.Accent);
                 g.FillRectangle(bar, Width - 3, r.Y + 6, 3, r.Height - 12);
             }

@@ -5,10 +5,9 @@ namespace Sumbo.Core;
 
 /// <summary>
 /// Atomic text-file writer shared by the JSON stores (<see cref="RegionStore"/>, <see cref="ProfileService"/>).
-/// Serializes the full content to a sibling temp file then swaps it in via
-/// <see cref="File.Replace(string,string,string?)"/> / <see cref="File.Move(string,string)"/>, cleaning up
-/// the temp on failure — so a crash mid-write never leaves a torn file and concurrent-clone saves on the
-/// single UI thread resolve to a last-complete-write-wins (FR-12/FR-13 — atomic persistence).
+/// Writes the full content to a sibling temp file, then swaps it in with an atomic move (cleaning up the
+/// temp on failure) — a crash mid-write never leaves a torn file, and saves on the single UI thread
+/// resolve to last-complete-write-wins.
 /// </summary>
 internal static class AtomicFile
 {

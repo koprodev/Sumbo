@@ -4,12 +4,12 @@ using Sumbo.Native;
 namespace Sumbo.Core;
 
 /// <summary>
-/// A sub-region of a source window for partial cloning (FR-02, 요건정의서 §7.3).
+/// A sub-region of a source window for partial cloning.
 /// <para>
 /// <b>Absolute</b> mode stores source pixel coordinates; <b>Relative</b> mode stores ratios
-/// (0.0~1.0) of the source size so the region tracks proportionally when the source is resized
-/// (원본 기능 계승). <see cref="ToSourceRect"/> resolves either mode to a concrete
-/// <see cref="RECT"/> for <c>DWM_TNP_RECTSOURCE</c>.
+/// (0.0~1.0) of the source size so the region tracks proportionally when the source is resized.
+/// <see cref="ToSourceRect"/> resolves either mode to a concrete <see cref="RECT"/> for
+/// <c>DWM_TNP_RECTSOURCE</c>.
 /// </para>
 /// Init-only properties + parameterless construction so <c>System.Text.Json</c> round-trips it.
 /// </summary>

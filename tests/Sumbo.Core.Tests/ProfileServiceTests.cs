@@ -74,7 +74,7 @@ public class ProfileServiceTests : IDisposable
     {
         string json = ProfileService.Serialize(new ProfilesFile { Profiles = new List<Profile> { Sample() } });
 
-        // §7.2 wire format: camelCase property names + string enum values.
+        // Wire format: camelCase property names + string enum values.
         Assert.Contains("\"matchBy\": \"title\"", json);
         Assert.Contains("\"anchor\": \"topRight\"", json);
         Assert.Contains("\"showBorder\": false", json);
@@ -114,7 +114,7 @@ public class ProfileServiceTests : IDisposable
     }
 
     [Fact]
-    public void SaveThenLoad_RoundTripsAlwaysOnTop() // M6-C
+    public void SaveThenLoad_RoundTripsAlwaysOnTop()
     {
         var svc = new ProfileService(_path);
         svc.Save(new ProfilesFile { Profiles = new List<Profile> { Sample() with { AlwaysOnTop = false } } });
@@ -123,17 +123,17 @@ public class ProfileServiceTests : IDisposable
     }
 
     [Fact]
-    public void Load_LegacyProfileWithoutAlwaysOnTop_DefaultsTrue() // M6-C F1 — no migration needed
+    public void Load_LegacyProfileWithoutAlwaysOnTop_DefaultsTrue()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        // A pre-M6-C profiles.json entry with no "alwaysOnTop" key restores as true (initializer preserved).
+        // A profiles.json entry with no "alwaysOnTop" key restores as true (initializer preserved, no migration).
         File.WriteAllText(_path, "{ \"version\": 1, \"profiles\": [ { \"id\": \"p_x\", \"name\": \"legacy\", \"opacity\": 90 } ] }");
 
         Assert.True(new ProfileService(_path).Load().Profiles[0].AlwaysOnTop);
     }
 
     [Fact]
-    public void SaveThenLoad_RoundTripsCenterAnchor() // M6-C 가운데 (tail-appended enum member)
+    public void SaveThenLoad_RoundTripsCenterAnchor() // Center is a tail-appended enum member
     {
         var svc = new ProfileService(_path);
         svc.Save(new ProfilesFile

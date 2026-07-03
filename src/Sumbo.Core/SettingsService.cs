@@ -6,10 +6,10 @@ using System.Text.Json.Serialization;
 namespace Sumbo.Core;
 
 /// <summary>
-/// Persists global <see cref="Settings"/> to <c>settings.json</c> (FR-14, §7.1). The path is injected (as
-/// with <see cref="ProfileService"/> / <see cref="RegionStore"/>) so the App supplies
-/// <c>%AppData%\Sumbo\settings.json</c> while tests use a temp path. Wire format matches §7.1 — camelCase
-/// names + string enums — via the same <see cref="JsonSerializerOptions"/> shape as <see cref="ProfileService"/>.
+/// Persists global <see cref="Settings"/> to <c>settings.json</c>. The path is injected (as with
+/// <see cref="ProfileService"/> / <see cref="RegionStore"/>) so the App supplies
+/// <c>%AppData%\Sumbo\settings.json</c> while tests use a temp path. Wire format is camelCase names +
+/// string enums, via the same <see cref="JsonSerializerOptions"/> shape as <see cref="ProfileService"/>.
 /// Writes are atomic (<see cref="AtomicFile"/>).
 /// </summary>
 public sealed class SettingsService

@@ -6,8 +6,8 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A pill on/off switch (디자인샘플.png의 토글) — blue track + white knob when on, gray track when off. Owner-drawn.
-/// Raises <see cref="CheckedChanged"/> on click. In M6-A the toggles are visual (bound to real mirror state in M6-C).
+/// Owner-drawn pill on/off switch — accent track + white knob when on, gray track when off.
+/// Raises <see cref="CheckedChanged"/> on click.
 /// </summary>
 internal sealed class ToggleSwitch : Control
 {
@@ -32,7 +32,7 @@ internal sealed class ToggleSwitch : Control
 
     protected override void OnClick(EventArgs e) { Checked = !Checked; base.OnClick(e); }
 
-    // V2-D 이월 ②: the owner-drawn surface must reflect Enabled itself (no system disabled rendering).
+    // Owner-drawn surface must repaint on Enabled changes; there is no system disabled rendering.
     protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
     protected override void OnPaint(PaintEventArgs e)

@@ -6,9 +6,8 @@ using System.Windows.Forms;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// A row of mutually-exclusive segment buttons (디자인샘플.png의 "창 크기" 4분할). The selected segment is blue-filled;
-/// the rest are dark cards with a subtle border. Raises <see cref="SelectedIndexChanged"/>. Used for the size mode
-/// picker (원본 맞춤 / 1:2 / 1:4 / 전체화면).
+/// Row of mutually-exclusive segment buttons. The selected segment fills with the accent color; the rest render
+/// as dark cards with a subtle border. Raises <see cref="SelectedIndexChanged"/>.
 /// </summary>
 internal sealed class SegmentedControl : Control
 {
@@ -33,8 +32,8 @@ internal sealed class SegmentedControl : Control
 
     public int SelectedIndex
     {
-        // -1 = no segment selected (M6-C: a free/custom-sized mirror has no preset; OnPaint then highlights none).
-        // User clicks always set a real 0..len-1 index; -1 is only ever assigned programmatically (mirror reflect).
+        // -1 = no segment selected (a free/custom-sized mirror matches no preset; OnPaint then highlights none).
+        // User clicks always set a real 0..len-1 index; -1 is only ever assigned programmatically.
         get => _selectedIndex;
         set { int v = value < 0 ? -1 : Math.Clamp(value, 0, Math.Max(0, _items.Length - 1)); if (v == _selectedIndex) return; _selectedIndex = v; Invalidate(); SelectedIndexChanged?.Invoke(this, EventArgs.Empty); }
     }
@@ -66,7 +65,7 @@ internal sealed class SegmentedControl : Control
         base.OnMouseDown(e);
     }
 
-    // V2-D 이월 ②: the owner-drawn surface must reflect Enabled itself (no system disabled rendering).
+    // Owner-drawn surface must repaint on Enabled changes; there is no system disabled rendering.
     protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
     protected override void OnPaint(PaintEventArgs e)

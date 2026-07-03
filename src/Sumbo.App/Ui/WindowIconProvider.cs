@@ -7,11 +7,11 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui;
 
 /// <summary>
-/// Loads and caches app icons for the target list (M6-B). The icon is extracted from the window's process image
+/// Loads and caches app icons for the target list. The icon is extracted from the window's process image
 /// (<see cref="Icon.ExtractAssociatedIcon(string)"/>) and cached by executable path so several windows of the same
 /// app share one bitmap.
 /// <para>
-/// Ownership (F2 보완): this provider is the sole owner of every cached <see cref="Image"/>. Callers
+/// Ownership: this provider is the sole owner of every cached <see cref="Image"/>. Callers
 /// (<c>TargetCard.IconImage</c>) hold references only and must NOT dispose them — a rebuild of the list on refresh
 /// reuses the cache, so disposing a card's image would corrupt other cards sharing the same exe. The provider's
 /// images live until <see cref="Dispose"/>, which the owner calls after the cards are gone.

@@ -5,13 +5,12 @@ namespace Sumbo.Core;
 
 /// <summary>
 /// Pure inverse of the thumbnail layout: maps a point in the clone's destination client area
-/// back to a point in the source window (요건정의서 §8.4 단계 2). Shared by click forwarding
-/// (FR-06) and region selection (FR-02).
+/// back to a point in the source window. Shared by click forwarding and region selection.
 /// <para>
 /// The clone draws <see cref="ActiveSource"/> (the full source, or the selected region) into
 /// <c>rcDestination</c> — a letterboxed sub-rect of the host client area. Mapping is therefore
-/// relative to <b>rcDestination + activeSource</b>, not the full source (PEER 보완 1), so the
-/// two stay consistent whether or not a region is active.
+/// relative to <b>rcDestination + activeSource</b>, not the full source, so the two stay
+/// consistent whether or not a region is active.
 /// </para>
 /// </summary>
 public static class CoordinateMapper

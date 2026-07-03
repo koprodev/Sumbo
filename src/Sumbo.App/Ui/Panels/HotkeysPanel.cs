@@ -9,11 +9,10 @@ using Sumbo.Core;
 namespace Sumbo.App.Ui.Panels;
 
 /// <summary>
-/// The 단축키(Hotkeys) panel (V2-E1, FR-09 — 읽기 전용, 사용자 채택): lists the seven global hotkeys
-/// (<see cref="HotkeyService.Defaults"/>) as action label + chord, marking any that failed to register (conflict).
-/// Rebinding is deferred (체크리스트v2.md §8 '재정의 UI 미구현 승계') — it needs a chord parser / per-action
-/// re-register API / Settings.Hotkeys persistence, none of which exist yet. Pure view: reads the Core defaults
-/// (무수정) and takes the registration failures from the shell via <see cref="ReflectFailures"/>.
+/// The read-only hotkeys panel: lists the seven global hotkeys (<see cref="HotkeyService.Defaults"/>) as action
+/// label + chord, marking any that failed to register (conflict). Rebinding is not supported — it needs a chord
+/// parser / per-action re-register API / hotkey persistence, none of which exist. Pure view: reads the Core
+/// defaults and takes the registration failures from the shell via <see cref="ReflectFailures"/>.
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class HotkeysPanel : PanelView

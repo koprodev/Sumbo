@@ -11,7 +11,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>Sumbo.App</RootNamespace>
     <AssemblyName>Sumbo</AssemblyName>
-    <!-- 버전 SSOT — AboutPanel 은 InformationalVersion 으로 자동 반영 (배포 cycle) -->
+    <!-- Single source of truth for the product version; the About panel reads InformationalVersion. -->
     <Version>1.0.0</Version>
     <ApplicationIcon>..\..\assets\sumbo.ico</ApplicationIcon>
   </PropertyGroup>
@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- runtime 아이콘 원본 — single-file publish 에서 파일 경로 의존 없이 AppIcons.Load 로 사이즈별 로드 -->
+    <!-- Icon embedded so single-file publish can load size-specific frames without a file path. -->
     <EmbeddedResource Include="..\..\assets\sumbo.ico" LogicalName="Sumbo.App.assets.sumbo.ico" />
   </ItemGroup>
 
