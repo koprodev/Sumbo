@@ -41,12 +41,16 @@ public class GroupSwitcherTests
     }
 
     [Fact]
-    public void Start_RequiresMembers_ThenStops()
+    public void Start_RequiresTwoMembers_ThenStops()
     {
         var g = new GroupSwitcher();
         Assert.False(g.Start());
 
         g.Add(Spec("A"));
+        Assert.False(g.Start()); // a single member would just hop onto itself
+        Assert.False(g.IsRunning);
+
+        g.Add(Spec("B"));
         Assert.True(g.Start());
         Assert.True(g.IsRunning);
 
@@ -59,8 +63,10 @@ public class GroupSwitcherTests
     {
         var g = new GroupSwitcher();
         g.Add(Spec("A"));
+        g.Add(Spec("B"));
         g.Next();
         g.Start();
+        Assert.True(g.IsRunning);
 
         g.Clear();
 

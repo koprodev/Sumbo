@@ -33,6 +33,9 @@ internal sealed class GroupPanel : PanelView
     private bool _hasMirror;
     private LocalizationCatalog? _loc; // set by ApplyStrings (runs before any reflect) — start/stop caption source
 
+    // Blink pulse while rotation runs — the stop button alternates Primary/Dark so the active cycle is unmissable.
+    private readonly System.Windows.Forms.Timer _blinkTimer = new() { Interval = 600 };
+
     /// <summary>Add-current-target button — needs a live mirror; the shell adds its current source spec.</summary>
     public event EventHandler? AddCurrentRequested;
 
@@ -79,6 +82,8 @@ internal sealed class GroupPanel : PanelView
         _toggleRunBtn.CornerBack = Theme.PanelBg;
         _toggleRunBtn.Enabled = false;
         _toggleRunBtn.Click += (_, _) => ToggleRunRequested?.Invoke(this, EventArgs.Empty);
+        _blinkTimer.Tick += (_, _) =>
+            _toggleRunBtn.Kind = _toggleRunBtn.Kind == ButtonKind.Primary ? ButtonKind.Dark : ButtonKind.Primary;
 
         _clearBtn.Kind = ButtonKind.Dark;
         _clearBtn.CornerBack = Theme.PanelBg;
@@ -120,6 +125,12 @@ internal sealed class GroupPanel : PanelView
         _hasMirror = hasMirror;
         _running = running;
         _toggleRunBtn.Text = _loc is null ? "" : _loc.Get(running ? LocKeys.Menu_Group_Stop : LocKeys.Menu_Group_Start);
+        _toggleRunBtn.Glyph = running ? Glyph.Stop : Glyph.Switch;
+        if (running != _blinkTimer.Enabled)
+        {
+            _blinkTimer.Enabled = running;
+            _toggleRunBtn.Kind = running ? ButtonKind.Primary : ButtonKind.Dark; // deterministic pulse phase / idle restore
+        }
 
         _syncing = true;
         try { _interval.Value = Math.Clamp(intervalSeconds, (int)_interval.Minimum, (int)_interval.Maximum); }
@@ -210,6 +221,13 @@ internal sealed class GroupPanel : PanelView
             y += 36 + 6;
         }
         _emptyNote.SetBounds(0, 0, cw, 20);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            _blinkTimer.Dispose(); // a component, not a child control — the form dispose chain doesn't reach it
+        base.Dispose(disposing);
     }
 }
 

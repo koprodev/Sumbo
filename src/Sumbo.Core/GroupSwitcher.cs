@@ -41,10 +41,11 @@ public sealed class GroupSwitcher
 
     public void SetInterval(int seconds) => IntervalSeconds = seconds < 1 ? 1 : seconds;
 
-    /// <summary>Starts rotation if there is at least one member; returns whether it is now running.</summary>
+    /// <summary>Starts rotation if there are at least two members (a single member would just hop onto
+    /// itself); returns whether it is now running.</summary>
     public bool Start()
     {
-        IsRunning = _members.Count > 0;
+        IsRunning = _members.Count > 1;
         return IsRunning;
     }
 

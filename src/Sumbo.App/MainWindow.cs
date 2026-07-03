@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -43,6 +44,7 @@ public sealed class MainWindow : Form
     // ── Right rail + option-panel host ──
     private const string PanelTargets = "targets";
     private const string PanelDisplay = "display";
+    private const string PanelBehavior = "behavior";
     private const string PanelRegion = "region";
     private const string PanelProfiles = "profiles";
     private const string PanelHotkeys = "hotkeys";
@@ -53,7 +55,7 @@ public sealed class MainWindow : Form
     /// <summary>Rail order — parallel to <see cref="RailItems"/>. Every id maps to an embedded panel.</summary>
     private static readonly string[] RailIds =
     {
-        PanelTargets, PanelDisplay, PanelRegion, PanelProfiles, PanelHotkeys, PanelGroup, PanelSettings, PanelAbout,
+        PanelTargets, PanelRegion, PanelDisplay, PanelBehavior, PanelProfiles, PanelHotkeys, PanelGroup, PanelSettings, PanelAbout,
     };
 
     private readonly IconRail _rail = new();
@@ -68,6 +70,7 @@ public sealed class MainWindow : Form
     // ── Panel framework — one PanelView per rail id, swapped by visibility under the shared header ──
     private readonly TargetsPanel _targetsPanel;
     private readonly DisplayPanel _displayPanel;
+    private readonly BehaviorPanel _behaviorPanel;
     private readonly RegionPanel _regionPanel;
     private readonly ProfilesPanel _profilesPanel;
     private readonly HotkeysPanel _hotkeysPanel;
@@ -138,7 +141,8 @@ public sealed class MainWindow : Form
         Icon = _appIcon;
 
         _targetsPanel = new TargetsPanel(_loc);
-        _displayPanel = new DisplayPanel(_loc);
+        _displayPanel = new DisplayPanel();
+        _behaviorPanel = new BehaviorPanel();
         _regionPanel = new RegionPanel(_loc);
         _profilesPanel = new ProfilesPanel(_loc);
         _hotkeysPanel = new HotkeysPanel();
@@ -147,13 +151,14 @@ public sealed class MainWindow : Form
         _aboutPanel = new AboutPanel();
         _allPanels = new PanelView[]
         {
-            _targetsPanel, _displayPanel, _regionPanel, _profilesPanel,
+            _targetsPanel, _displayPanel, _behaviorPanel, _regionPanel, _profilesPanel,
             _hotkeysPanel, _groupPanel, _settingsPanel, _aboutPanel,
         };
         _panels = new Dictionary<string, PanelView>
         {
             [PanelTargets] = _targetsPanel,
             [PanelDisplay] = _displayPanel,
+            [PanelBehavior] = _behaviorPanel,
             [PanelRegion] = _regionPanel,
             [PanelProfiles] = _profilesPanel,
             [PanelHotkeys] = _hotkeysPanel,
@@ -182,14 +187,14 @@ public sealed class MainWindow : Form
         _targetsPanel.TargetActivated += OnTargetActivated;
         _targetsPanel.StopRequested += OnStopRequested;
         _displayPanel.OpacityChangeRequested += OnOpacityChangeRequested;
-        _displayPanel.BorderToggleRequested += OnBorderToggleRequested;
         _displayPanel.SizeModeSelected += OnSizeModeSelected;
         _displayPanel.AnchorSelected += OnAnchorSelected;
-        _displayPanel.ClickForwardToggleRequested += OnClickForwardToggleRequested;
-        _displayPanel.ClickThroughToggleRequested += OnClickThroughToggleRequested;
-        _displayPanel.LockToggleRequested += OnLockToggleRequested;
-        _displayPanel.AotToggleRequested += OnAotToggleRequested;
-        _displayPanel.HideUiRequested += OnHideUiRequested;
+        _behaviorPanel.BorderToggleRequested += OnBorderToggleRequested;
+        _behaviorPanel.ClickForwardToggleRequested += OnClickForwardToggleRequested;
+        _behaviorPanel.ClickThroughToggleRequested += OnClickThroughToggleRequested;
+        _behaviorPanel.LockToggleRequested += OnLockToggleRequested;
+        _behaviorPanel.AotToggleRequested += OnAotToggleRequested;
+        _behaviorPanel.HideUiRequested += OnHideUiRequested;
         _regionPanel.SelectRequested += OnRegionSelectRequested;
         _regionPanel.ClearRequested += OnRegionClearRequested;
         _regionPanel.SaveRequested += OnRegionSaveRequested;
@@ -205,6 +210,7 @@ public sealed class MainWindow : Form
         _settingsPanel.LanguageSelected += OnSettingsLanguageSelected;
         _settingsPanel.StartWithWindowsToggled += OnSettingsStartWithWindowsToggled;
         _settingsPanel.MinimizeToTrayToggled += OnSettingsMinimizeToTrayToggled;
+        _aboutPanel.LinkActivated += OnAboutLinkActivated;
         _hotkeysPanel.ReflectFailures(_manager.HotkeyFailures); // startup hotkey-conflict flags (after ApplyStrings)
         _settingsPanel.ReflectSettings(_manager.Current);       // seed language/startup toggles
         _groupTimer.Tick += OnGroupTick;
@@ -308,8 +314,9 @@ public sealed class MainWindow : Form
     private List<RailItem> RailItems() => new()
     {
         new(PanelTargets, Glyph.GridView, _loc.Get(LocKeys.Main_Nav_Targets)),
-        new(PanelDisplay, Glyph.Monitor, _loc.Get(LocKeys.Main_Display_Title)),
         new(PanelRegion, Glyph.Crop, _loc.Get(LocKeys.Main_Nav_Region)),
+        new(PanelDisplay, Glyph.Monitor, _loc.Get(LocKeys.Main_Display_Title)),
+        new(PanelBehavior, Glyph.Lightning, _loc.Get(LocKeys.Main_Nav_Behavior)),
         new(PanelProfiles, Glyph.Contact, _loc.Get(LocKeys.Main_Nav_Profiles)),
         new(PanelHotkeys, Glyph.Keyboard, _loc.Get(LocKeys.Main_Nav_Hotkeys)),
         new(PanelGroup, Glyph.Switch, _loc.Get(LocKeys.Main_Nav_Group)),
@@ -321,6 +328,7 @@ public sealed class MainWindow : Form
     {
         PanelTargets => _loc.Get(LocKeys.Main_Nav_Targets),
         PanelDisplay => _loc.Get(LocKeys.Main_Display_Title),
+        PanelBehavior => _loc.Get(LocKeys.Main_Nav_Behavior),
         PanelRegion => _loc.Get(LocKeys.Main_Nav_Region),
         PanelProfiles => _loc.Get(LocKeys.Main_Nav_Profiles),
         PanelHotkeys => _loc.Get(LocKeys.Main_Nav_Hotkeys),
@@ -612,6 +620,20 @@ public sealed class MainWindow : Form
             SetOverlayMode(true);
     }
 
+    /// <summary>Opens an about-panel link (releases / sponsors / source) in the default browser. A missing browser
+    /// association or a cancelled shell prompt must not crash the app.</summary>
+    private void OnAboutLinkActivated(object? sender, string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            // no browser association / user-cancelled shell prompt — nothing actionable
+        }
+    }
+
     /// <summary>Single route for overlay (UI-hidden) mode — state switch + visual-state reapply + panel reflect.</summary>
     private void SetOverlayMode(bool hidden)
     {
@@ -688,7 +710,7 @@ public sealed class MainWindow : Form
         SyncPanels();
     }
 
-    private void OnAotToggleRequested(object? sender, EventArgs e) => SetAlwaysOnTop(!_alwaysOnTop);
+    private void OnAotToggleRequested(object? sender, bool on) => SetAlwaysOnTop(on);
 
     private void SetAlwaysOnTop(bool on)
     {
@@ -756,7 +778,8 @@ public sealed class MainWindow : Form
     private void SyncPanels()
     {
         _targetsPanel.ReflectMirror(_mirror.TargetHandle, _mirror.HasMirror);
-        _displayPanel.ReflectMirror(_mirror.HasMirror, ShellViewState(), _manager.IsClickThroughHotkeyLive);
+        _displayPanel.ReflectMirror(_mirror.HasMirror, ShellViewState());
+        _behaviorPanel.ReflectMirror(_mirror.HasMirror, ShellViewState(), _manager.IsClickThroughHotkeyLive);
         _regionPanel.ReflectMirror(_mirror.HasMirror, _mirror.CurrentRegion);
         _profilesPanel.ReflectMirror(_mirror.HasMirror);
         _groupPanel.ReflectMirror(_mirror.HasMirror); // lightweight — button enable only; the member list goes through ReflectGroup
@@ -1262,11 +1285,11 @@ public sealed class MainWindow : Form
             return;
         }
 
-        if (_group.Count == 0)
+        if (_group.Count <= 1) // GroupSwitcher.Start refuses a single member too — this branch adds the notice
         {
             MessageBox.Show(
                 this,
-                _loc.Get(LocKeys.Dialog_GroupEmpty_Body),
+                _loc.Get(_group.Count == 0 ? LocKeys.Dialog_GroupEmpty_Body : LocKeys.Dialog_GroupSingle_Body),
                 _loc.Get(LocKeys.Dialog_GroupSwitch_Caption),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -1872,14 +1895,14 @@ public sealed class MainWindow : Form
         _targetsPanel.TargetActivated -= OnTargetActivated;
         _targetsPanel.StopRequested -= OnStopRequested;
         _displayPanel.OpacityChangeRequested -= OnOpacityChangeRequested;
-        _displayPanel.BorderToggleRequested -= OnBorderToggleRequested;
         _displayPanel.SizeModeSelected -= OnSizeModeSelected;
         _displayPanel.AnchorSelected -= OnAnchorSelected;
-        _displayPanel.ClickForwardToggleRequested -= OnClickForwardToggleRequested;
-        _displayPanel.ClickThroughToggleRequested -= OnClickThroughToggleRequested;
-        _displayPanel.LockToggleRequested -= OnLockToggleRequested;
-        _displayPanel.AotToggleRequested -= OnAotToggleRequested;
-        _displayPanel.HideUiRequested -= OnHideUiRequested;
+        _behaviorPanel.BorderToggleRequested -= OnBorderToggleRequested;
+        _behaviorPanel.ClickForwardToggleRequested -= OnClickForwardToggleRequested;
+        _behaviorPanel.ClickThroughToggleRequested -= OnClickThroughToggleRequested;
+        _behaviorPanel.LockToggleRequested -= OnLockToggleRequested;
+        _behaviorPanel.AotToggleRequested -= OnAotToggleRequested;
+        _behaviorPanel.HideUiRequested -= OnHideUiRequested;
         _regionPanel.SelectRequested -= OnRegionSelectRequested;
         _regionPanel.ClearRequested -= OnRegionClearRequested;
         _regionPanel.SaveRequested -= OnRegionSaveRequested;
@@ -1895,6 +1918,7 @@ public sealed class MainWindow : Form
         _settingsPanel.LanguageSelected -= OnSettingsLanguageSelected;
         _settingsPanel.StartWithWindowsToggled -= OnSettingsStartWithWindowsToggled;
         _settingsPanel.MinimizeToTrayToggled -= OnSettingsMinimizeToTrayToggled;
+        _aboutPanel.LinkActivated -= OnAboutLinkActivated;
         _groupTimer.Tick -= OnGroupTick;
         _groupTimer.Stop();
         _groupTimer.Dispose();

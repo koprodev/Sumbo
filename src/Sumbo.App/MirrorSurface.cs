@@ -368,9 +368,12 @@ internal sealed class MirrorSurface : IDisposable
                 ThumbnailLayout.FitPreservingAspect(active.Width, active.Height, _hostRect.Width, _hostRect.Height);
 
             var dest = new RECT(_hostRect.Left + left, _hostRect.Top + top, _hostRect.Left + right, _hostRect.Top + bottom);
-            // Overlay pushes the thumbnail opaque (the host Form.Opacity carries the percent); normal
-            // mode uses the DWM byte. One saved percent (_opacity), two channels.
-            _session.UpdateDestination(dest, _region is null ? null : active, _overlay ? (byte)255 : _opacity);
+            // Always pass rcSource (the full-source rect when unclipped): DwmUpdateThumbnailProperties updates only
+            // the flagged members, so dropping DWM_TNP_RECTSOURCE on a crop-clear would leave the prior crop's source
+            // rect in place — the mirror would stay zoomed to the old region instead of returning to the full source.
+            // Overlay pushes the thumbnail opaque (the host Form.Opacity carries the percent); normal mode uses the
+            // DWM byte. One saved percent (_opacity), two channels.
+            _session.UpdateDestination(dest, active, _overlay ? (byte)255 : _opacity);
 
             _lastDestRect = dest;
             _lastActiveSource = active;

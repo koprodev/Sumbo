@@ -75,6 +75,7 @@ public static class LocKeys
     public const string Dialog_ProfileRestore_Body = "dialog.profileRestore.body"; // {0} = profile name
     public const string Dialog_ProfileRestore_Caption = "dialog.profileRestore.caption";
     public const string Dialog_GroupEmpty_Body = "dialog.groupEmpty.body";
+    public const string Dialog_GroupSingle_Body = "dialog.groupSingle.body";
     public const string Dialog_GroupSwitch_Caption = "dialog.groupSwitch.caption";
     public const string Dialog_GroupAllMissing_Body = "dialog.groupAllMissing.body";
     public const string Dialog_GroupMemberMissing_Body = "dialog.groupMemberMissing.body"; // {0} = member title
@@ -102,25 +103,25 @@ public static class LocKeys
     public const string Settings_Section_Startup = "settings.section.startup";
 
     // ── Main window control panel ──
-    public const string Main_TargetSection = "main.targetSection";
     public const string Main_SearchPlaceholder = "main.searchPlaceholder";
     public const string Main_StatusRunning = "main.statusRunning";
     public const string Main_HideUi = "main.hideUi";
     public const string Main_Opacity = "main.opacity";
     public const string Main_Display_Title = "main.display.title";
     public const string Main_Display_Subtitle = "main.display.subtitle";
+    public const string Main_Behavior_Subtitle = "main.behavior.subtitle";
     public const string Main_Display_Size = "main.display.size";
     public const string Main_Display_Anchor = "main.display.anchor";
     public const string Main_Anchor_Center = "main.anchor.center";
     public const string Main_Display_AlwaysOnTop = "main.display.alwaysOnTop";
-    public const string Main_AlwaysOnTop_Off = "main.alwaysOnTop.off";
-    public const string Main_AlwaysOnTop_On = "main.alwaysOnTop.on";
     public const string Main_Display_HideUi_Hint = "main.display.hideUi.hint"; // hint under the hide-UI button (ESC restores)
     public const string Main_Mode_ClickForward_Desc = "main.mode.clickForward.desc";
     public const string Main_Mode_ClickThrough_Desc = "main.mode.clickThrough.desc";
     public const string Main_Mode_Lock_Desc = "main.mode.lock.desc";
     public const string Main_Mode_Border_Desc = "main.mode.border.desc";
+    public const string Main_Mode_Aot_Desc = "main.mode.aot.desc";
     public const string Main_Nav_Region = "main.nav.region";
+    public const string Main_Nav_Behavior = "main.nav.behavior";
     public const string Main_Nav_Hotkeys = "main.nav.hotkeys";
     public const string Main_Nav_Group = "main.nav.group";
     public const string Main_Nav_Settings = "main.nav.settings";
@@ -157,6 +158,11 @@ public static class LocKeys
     public const string Main_About_Subtitle = "main.about.subtitle";         // tagline / description
     public const string Main_About_Version = "main.about.version";           // "Version {0}" ({0} = version)
     public const string Main_About_UpdateNote = "main.about.updateNote";     // notice that auto-update is not available yet
+    public const string Main_About_UpdateCheck = "main.about.updateCheck";   // opens the releases page to check for a newer version
+    public const string Main_About_SupportNote = "main.about.supportNote";   // donation invitation line
+    public const string Main_About_Support = "main.about.support";           // opens GitHub Sponsors
+    public const string Main_About_License = "main.about.license";           // license + copyright line
+    public const string Main_About_Source = "main.about.source";             // opens the source repository
 
     /// <summary>Every key above — the authoritative set each language catalog must fully cover.</summary>
     public static readonly string[] All =
@@ -177,19 +183,20 @@ public static class LocKeys
         Dialog_CloneFailed_Caption, Dialog_CloneFailed_Body, Dialog_ClickThroughUnavailable_Body, Dialog_ClickThroughUnavailable_Caption,
         Dialog_ClickForwardUnsupported_Body, Dialog_ClickForwardUnsupported_Caption, Dialog_RegionSaveFailed_Caption,
         Dialog_ProfileSaveFailed_Caption, Dialog_ProfileRestore_Body, Dialog_ProfileRestore_Caption,
-        Dialog_GroupEmpty_Body, Dialog_GroupSwitch_Caption, Dialog_GroupAllMissing_Body,
+        Dialog_GroupEmpty_Body, Dialog_GroupSingle_Body, Dialog_GroupSwitch_Caption, Dialog_GroupAllMissing_Body,
         Dialog_GroupMemberMissing_Body,
         Dialog_DwmDisabled_Body, Dialog_DwmDisabled_Caption, Dialog_HotkeyConflict_Body,
         Dialog_HotkeyConflict_Caption, Dialog_AutoStartFailed_Body, Dialog_AutoStartFailed_Caption,
         Tray_ToggleVisible, Tray_AutoStart, Tray_MinimizeToTray, Tray_Exit,
         Tray_ResidentNotice_Title, Tray_ResidentNotice_Body,
         Settings_Section_Language, Settings_Language_Ko, Settings_Language_En, Settings_Section_Startup,
-        Main_TargetSection, Main_SearchPlaceholder, Main_StatusRunning,
+        Main_SearchPlaceholder, Main_StatusRunning,
         Main_HideUi, Main_Opacity, Main_Display_Title,
-        Main_Display_Subtitle, Main_Display_Size, Main_Display_Anchor, Main_Anchor_Center,
-        Main_Display_AlwaysOnTop, Main_AlwaysOnTop_Off, Main_AlwaysOnTop_On,
+        Main_Display_Subtitle, Main_Behavior_Subtitle, Main_Display_Size, Main_Display_Anchor, Main_Anchor_Center,
+        Main_Display_AlwaysOnTop,
         Main_Display_HideUi_Hint, Main_Mode_ClickForward_Desc,
-        Main_Mode_ClickThrough_Desc, Main_Mode_Lock_Desc, Main_Mode_Border_Desc, Main_Nav_Region,
+        Main_Mode_ClickThrough_Desc, Main_Mode_Lock_Desc, Main_Mode_Border_Desc, Main_Mode_Aot_Desc,
+        Main_Nav_Region, Main_Nav_Behavior,
         Main_Nav_Hotkeys, Main_Nav_Group, Main_Nav_Settings, Main_Nav_About,
         Main_Nav_Targets, Main_Nav_Profiles, Main_StopMirror, Main_Mirror_Hint,
         Main_Region_Subtitle, Main_Region_Current, Main_Profiles_Subtitle, Main_Item_Apply,
@@ -199,5 +206,6 @@ public static class LocKeys
         Main_Hotkey_ToggleVisible, Main_Hotkey_PickWindow, Main_Hotkey_ClickThrough,
         Main_Hotkey_OpacityUp, Main_Hotkey_OpacityDown, Main_Hotkey_RegionSelect, Main_Hotkey_GroupSwitch,
         Main_About_Subtitle, Main_About_Version, Main_About_UpdateNote,
+        Main_About_UpdateCheck, Main_About_SupportNote, Main_About_Support, Main_About_License, Main_About_Source,
     };
 }

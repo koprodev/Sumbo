@@ -155,6 +155,7 @@ internal static class Glyph
     public const string Monitor = "";      // display (TV/monitor)
     public const string Keyboard = "";     // hotkeys
     public const string Switch = "";       // group rotation (sync)
+    public const string Stop = "";         // filled square (rotation running)
     public const string Lightning = "";    // quick actions (light)
     public const string Info = "";         // about
     public const string Globe = "";        // web (chrome placeholder icon)
