@@ -56,6 +56,9 @@
 | `Sumbo-<버전>-win-x64.zip` | ~45 MB | **무설치(포터블)** — 압축 해제 후 `Sumbo.exe` 실행. 런타임 내장, 설치 불필요. |
 | `Sumbo-<버전>-win-x64-lite.zip` | ~0.2 MB | **경량 포터블** — 런타임 미동봉. [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) 필요 (없으면 첫 실행 시 Windows 가 다운로드 링크 안내). |
 
+또는 winget 으로 설치 — 이 경로는 SmartScreen 창이 뜨지 않습니다: `winget install koprodev.Sumbo`
+*(카탈로그 등록 심사 중 — 승인 후 사용 가능)*
+
 *(선택)* 파일 검증: PowerShell `Get-FileHash <파일>` 결과를 릴리스에 첨부된
 `SHA256SUMS.txt` 와 대조.
 

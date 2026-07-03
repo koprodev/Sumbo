@@ -59,6 +59,9 @@ Pick one from [Releases](https://github.com/koprodev/Sumbo/releases):
 | `Sumbo-<version>-win-x64.zip` | ~45 MB | **Portable** — unzip anywhere and run `Sumbo.exe`. Runtime bundled, nothing to install. |
 | `Sumbo-<version>-win-x64-lite.zip` | ~0.2 MB | **Lite portable** — same app without the bundled runtime. Requires the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows prompts with a download link on first run if missing). |
 
+Or via winget — no SmartScreen prompt on this route: `winget install koprodev.Sumbo`
+*(catalog listing in review — available once approved)*
+
 *(Optional)* Verify a download: compare `Get-FileHash <file>` (PowerShell) against
 `SHA256SUMS.txt` attached to the release.
 
