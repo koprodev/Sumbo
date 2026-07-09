@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Walang naka-save na rehiyon)",
   "menu.placeholder.noProfiles": "(Walang naka-save na profile)",
+  "menu.placeholder.noTargets": "(Walang available na window)",
 
   "common.ok": "OK",
   "common.cancel": "Kanselahin",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Tumatakbo pa rin ang Sumbo sa tray",
   "tray.residentNotice.body": "Ang pagsara ng window ay hindi nag-e-exit sa app. Gamitin ang tray icon para ibalik o lumabas.",
 
+  "update.dialog.caption": "May update",
+  "update.dialog.body": "Inilabas na ang bagong bersyon {0}. Buksan ang download page?",
+
   "settings.section.language": "Wika",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Pagsisimula / Tray",
+  "settings.checkUpdates": "Suriin ang update sa pagsisimula",
 
   "main.searchPlaceholder": "Maghanap ng mga proseso",
   "main.statusRunning": "Tumatakbo",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Mga Profile",
   "main.stopMirror": "Ihinto ang Pag-mirror",
   "main.mirror.hint": "Pumili ng window na imi-mirror mula sa [Mga Target] na panel ({0})",
+  "main.mirror.minimizedHint": "Naka-minimize ang target na window at huminto ang app sa paggawa ng frame. I-restore ang window para ipagpatuloy ang mirror.",
 
   "main.region.subtitle": "I-click ang Pumili ng Rehiyon, pagkatapos i-drag sa ibabaw ng mirror para ipakita lang ang bahaging iyon. (ESC para kanselahin)",
   "main.region.current": "Kasalukuyang Rehiyon",

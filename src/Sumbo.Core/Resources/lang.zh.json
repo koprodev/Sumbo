@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(没有已保存的区域)",
   "menu.placeholder.noProfiles": "(没有已保存的配置)",
+  "menu.placeholder.noTargets": "(没有可镜像的窗口)",
 
   "common.ok": "确定",
   "common.cancel": "取消",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo 正在托盘中运行",
   "tray.residentNotice.body": "关闭窗口不会退出应用。可通过托盘图标恢复或退出。",
 
+  "update.dialog.caption": "更新提示",
+  "update.dialog.body": "新版本 {0} 已发布。要打开下载页面吗？",
+
   "settings.section.language": "语言",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "启动 / 托盘",
+  "settings.checkUpdates": "启动时检查更新",
 
   "main.searchPlaceholder": "搜索进程",
   "main.statusRunning": "运行中",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "配置",
   "main.stopMirror": "停止镜像",
   "main.mirror.hint": "从 [目标窗口] 面板中选择要镜像的窗口 ({0})",
+  "main.mirror.minimizedHint": "目标窗口已最小化，应用停止生成画面。恢复该窗口后镜像将继续显示。",
 
   "main.region.subtitle": "点击选择区域，然后在镜像上拖动即可仅显示该部分。(按 ESC 取消)",
   "main.region.current": "当前区域",

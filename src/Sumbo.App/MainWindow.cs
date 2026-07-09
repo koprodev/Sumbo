@@ -97,6 +97,7 @@ public sealed class MainWindow : Form
     private ClientSizeMode? _sizeMode;      // size preset; null = free size (a user drag or clamp clears it)
     private SnapAnchor? _anchor;            // null = unanchored
     private bool _clickForward;             // mutually exclusive with _clickThrough
+    private bool _overlayBeforeClickThrough; // overlay state to return to when click-through drops
     private bool _clickThrough;             // ON forces overlay (UI-hidden) mode
     private bool _locked;                   // in-memory only — not persisted in profiles
     private bool _alwaysOnTop;
@@ -134,21 +135,25 @@ public sealed class MainWindow : Form
     private readonly ContextMenuStrip _mirrorMenu = new();
     private ToolStripMenuItem _ctxRestoreUi = null!;   // overlay only — the grip menu's way back to the full window
     private ToolStripSeparator _ctxRestoreSep = null!;
-    private ToolStripMenuItem _ctxTarget = null!;
-    private ToolStripMenuItem _ctxStop = null!;
-    private ToolStripMenuItem _ctxRegion = null!;
+    private ToolStripMenuItem _ctxTarget = null!;      // parent — window list rebuilt on DropDownOpening
+    private ToolStripMenuItem _ctxRegion = null!;      // parent — select / clear
+    private ToolStripMenuItem _ctxRegionSelect = null!;
+    private ToolStripMenuItem _ctxRegionClear = null!;
+    private ToolStripMenuItem _ctxSize = null!;        // parent — 100% / 50% / 25% / fullscreen
+    private ToolStripMenuItem[] _ctxSizePresets = null!;
+    private ToolStripMenuItem _ctxOpacity = null!;
+    private ToolStripMenuItem[] _ctxOpacityPresets = null!;
+    private ToolStripMenuItem _ctxBehavior = null!;    // parent — click modes / lock / border / always-on-top
     private ToolStripMenuItem _ctxForward = null!;
     private ToolStripMenuItem _ctxThrough = null!;
     private ToolStripMenuItem _ctxLock = null!;
+    private ToolStripMenuItem _ctxBorder = null!;
     private ToolStripMenuItem _ctxAot = null!;
-    private ToolStripMenuItem _ctxOpacity = null!;
-    private ToolStripMenuItem[] _ctxOpacityPresets = null!;
-    private ToolStripMenuItem _ctxMinimize = null!;
     private ToolStripMenuItem _ctxSettings = null!;
-    private ToolStripMenuItem _ctxExit = null!;        // overlay only — full app exit without leaving UI-hidden mode
-    private ToolStripSeparator _ctxExitSep = null!;
 
     private static readonly int[] OpacityPresets = { 100, 75, 50, 25 };
+    private const int SizePresetCount = 4;             // 100% / 50% / 25% / fullscreen — indices feed OnSizeModeSelected
+    private const int CtxTitleMaxChars = 60;           // window-title cap for the target submenu
 
     public MainWindow(CloneManager manager, LocalizationCatalog localization)
     {
@@ -228,6 +233,7 @@ public sealed class MainWindow : Form
         _settingsPanel.LanguageSelected += OnSettingsLanguageSelected;
         _settingsPanel.StartWithWindowsToggled += OnSettingsStartWithWindowsToggled;
         _settingsPanel.MinimizeToTrayToggled += OnSettingsMinimizeToTrayToggled;
+        _settingsPanel.CheckUpdatesToggled += OnSettingsCheckUpdatesToggled;
         _aboutPanel.LinkActivated += OnAboutLinkActivated;
         _hotkeysPanel.ReflectFailures(_manager.HotkeyFailures); // startup hotkey-conflict flags (after ApplyStrings)
         _settingsPanel.ReflectSettings(_manager.Current);       // seed language/startup toggles
@@ -239,6 +245,8 @@ public sealed class MainWindow : Form
         SyncPanels();
 
         _mirror.Changed += OnMirrorChanged;
+        _mirror.SourceResized += OnSourceResized;      // source window resized → follow the new aspect
+        _mirror.DegradedChanged += OnMirrorDegradedChanged; // iconic ghost ↔ live surface
         _manager.HotkeyRouted += OnHotkeyRouted;       // global hotkeys land on this window
         _manager.SurfaceRequested += OnSurfaceRequested; // tray show/hide/restore requests target this window
         _sourceWatch.Tick += (_, _) => _mirror.ValidateSource(); // prompt source-loss → idle canvas (no dead frame)
@@ -259,30 +267,39 @@ public sealed class MainWindow : Form
         Controls.Add(_rail);
     }
 
-    /// <summary>Mirror-canvas right-click menu. Shown only over a live mirror (<see cref="OnMouseUp"/> gate); item
-    /// enable/check state is set on Opening. Click-forward/through toggle through the same shell routes as the
-    /// display panel.</summary>
+    /// <summary>Mirror-canvas right-click menu (idle canvas included — the target submenu starts a mirror); item
+    /// enable/check state is set on Opening. Grouped as submenus: target list / region / size / opacity / behavior,
+    /// then restore-UI and settings. All actions route through the same shell paths as the side panels.</summary>
     private void BuildMirrorMenu()
     {
         _ctxRestoreUi = new ToolStripMenuItem();
         _ctxRestoreUi.Click += (_, _) => RestoreUserInterface();
         _ctxRestoreSep = new ToolStripSeparator();
+
         // Global-hotkey chords shown right-aligned via ShortcutKeyDisplayString (display only — the keys are
         // registered globally elsewhere, not as local menu shortcuts).
         _ctxTarget = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.PickWindow) };
-        _ctxTarget.Click += (_, _) => { SetActivePanel(PanelTargets); _targetsPanel.ReloadTargets(); };
-        _ctxStop = new ToolStripMenuItem();
-        _ctxStop.Click += (_, _) => _mirror.Stop();
-        _ctxRegion = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.RegionSelect) };
-        _ctxRegion.Click += (_, _) => EnterRegionSelect();
-        _ctxForward = new ToolStripMenuItem();
-        _ctxForward.Click += (_, _) => SetClickForward(!_clickForward);
-        _ctxThrough = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.ClickThrough) };
-        _ctxThrough.Click += (_, _) => SetClickThrough(!_clickThrough);
-        _ctxLock = new ToolStripMenuItem();
-        _ctxLock.Click += (_, _) => OnLockToggleRequested(this, !_locked);
-        _ctxAot = new ToolStripMenuItem();
-        _ctxAot.Click += (_, _) => SetAlwaysOnTop(!_alwaysOnTop);
+        _ctxTarget.DropDownOpening += (_, _) => PopulateTargetSubmenu();
+        _ctxTarget.DropDownItems.Add(new ToolStripMenuItem()); // placeholder so the parent renders a submenu arrow
+
+        _ctxRegion = new ToolStripMenuItem();
+        _ctxRegionSelect = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.RegionSelect) };
+        _ctxRegionSelect.Click += (_, _) => EnterRegionSelect();
+        _ctxRegionClear = new ToolStripMenuItem();
+        _ctxRegionClear.Click += (_, _) => ApplyRegion(null);
+        _ctxRegion.DropDownItems.AddRange(new ToolStripItem[] { _ctxRegionSelect, _ctxRegionClear });
+
+        _ctxSize = new ToolStripMenuItem();
+        _ctxSizePresets = new ToolStripMenuItem[SizePresetCount];
+        for (int i = 0; i < SizePresetCount; i++)
+        {
+            int index = i; // OnSizeModeSelected's segment index: 0=source(100%) 1=half 2=quarter 3=fullscreen
+            var preset = new ToolStripMenuItem();
+            preset.Click += (_, _) => OnSizeModeSelected(this, index);
+            _ctxSizePresets[i] = preset;
+            _ctxSize.DropDownItems.Add(preset);
+        }
+
         _ctxOpacity = new ToolStripMenuItem();
         _ctxOpacityPresets = new ToolStripMenuItem[OpacityPresets.Length];
         for (int i = 0; i < OpacityPresets.Length; i++)
@@ -293,27 +310,31 @@ public sealed class MainWindow : Form
             _ctxOpacityPresets[i] = preset;
             _ctxOpacity.DropDownItems.Add(preset);
         }
-        _ctxMinimize = new ToolStripMenuItem();
-        _ctxMinimize.Click += (_, _) => HideToTray(notice: false); // explicit request — retire to tray even when close-to-tray is off
+
+        _ctxBehavior = new ToolStripMenuItem();
+        _ctxForward = new ToolStripMenuItem();
+        _ctxForward.Click += (_, _) => SetClickForward(!_clickForward);
+        _ctxThrough = new ToolStripMenuItem { ShortcutKeyDisplayString = ChordFor(HotkeyAction.ClickThrough) };
+        _ctxThrough.Click += (_, _) => SetClickThrough(!_clickThrough);
+        _ctxLock = new ToolStripMenuItem();
+        _ctxLock.Click += (_, _) => OnLockToggleRequested(this, !_locked);
+        _ctxBorder = new ToolStripMenuItem();
+        _ctxBorder.Click += (_, _) => OnBorderToggleRequested(this, !_showMirrorBorder);
+        _ctxAot = new ToolStripMenuItem();
+        _ctxAot.Click += (_, _) => SetAlwaysOnTop(!_alwaysOnTop);
+        _ctxBehavior.DropDownItems.AddRange(new ToolStripItem[] { _ctxForward, _ctxThrough, _ctxLock, _ctxBorder, _ctxAot });
+
         _ctxSettings = new ToolStripMenuItem();
         _ctxSettings.Click += (_, _) => SetActivePanel(PanelSettings);
-        _ctxExit = new ToolStripMenuItem();
-        _ctxExit.Click += (_, _) => CloseForExit(); // real quit — same single exit funnel as the tray Exit command
-        _ctxExitSep = new ToolStripSeparator();
 
         _mirrorMenu.Items.AddRange(new ToolStripItem[]
         {
-            _ctxRestoreUi, _ctxRestoreSep,
             _ctxTarget,
             new ToolStripSeparator(),
-            _ctxStop, _ctxRegion,
+            _ctxRegion, _ctxSize, _ctxOpacity, _ctxBehavior,
             new ToolStripSeparator(),
-            _ctxForward, _ctxThrough, _ctxLock, _ctxAot, _ctxOpacity,
-            new ToolStripSeparator(),
-            _ctxMinimize,
-            new ToolStripSeparator(),
+            _ctxRestoreUi, _ctxRestoreSep,
             _ctxSettings,
-            _ctxExitSep, _ctxExit,
         });
 
         _mirrorMenu.Opening += (_, _) =>
@@ -321,21 +342,70 @@ public sealed class MainWindow : Form
             bool m = _mirror.HasMirror;
             _ctxRestoreUi.Visible = _uiHidden; // grip-menu entry — meaningless while the UI is already shown
             _ctxRestoreSep.Visible = _uiHidden;
-            _ctxExit.Visible = _uiHidden;      // overlay has no chrome/tray affordance in reach — offer a real exit here
-            _ctxExitSep.Visible = _uiHidden;
-            _ctxStop.Enabled = m;
             _ctxRegion.Enabled = m;
+            _ctxRegionSelect.Enabled = m && !_clickThrough; // during click-through the drag never reaches this window
+            _ctxRegionClear.Enabled = m && _mirror.CurrentRegion is not null;
+            bool fullscreen = WindowState == FormWindowState.Maximized;
+            _ctxSize.Enabled = m && !_locked;
+            _ctxSizePresets[0].Checked = !fullscreen && _sizeMode == ClientSizeMode.Source;
+            _ctxSizePresets[1].Checked = !fullscreen && _sizeMode == ClientSizeMode.Half;
+            _ctxSizePresets[2].Checked = !fullscreen && _sizeMode == ClientSizeMode.Quarter;
+            _ctxSizePresets[3].Checked = fullscreen;
+            _ctxOpacity.Enabled = m;
+            int cur = _mirror.OpacityPercent;
+            for (int i = 0; i < OpacityPresets.Length; i++)
+                _ctxOpacityPresets[i].Checked = OpacityPresets[i] == cur;
             _ctxForward.Enabled = m && !_clickThrough; // forwarding and click-through are mutually exclusive
             _ctxForward.Checked = _clickForward;
             _ctxThrough.Enabled = m && _manager.IsClickThroughHotkeyLive;
             _ctxThrough.Checked = _clickThrough;
             _ctxLock.Checked = _locked;
+            _ctxBorder.Checked = _showMirrorBorder;
             _ctxAot.Checked = _alwaysOnTop;
-            _ctxOpacity.Enabled = m;
-            int cur = _mirror.OpacityPercent;
-            for (int i = 0; i < OpacityPresets.Length; i++)
-                _ctxOpacityPresets[i].Checked = OpacityPresets[i] == cur;
         };
+    }
+
+    /// <summary>Rebuilds the target submenu from a fresh Win32 enumeration (runs per open — a user gesture, so the
+    /// enumeration cost is acceptable and the list is never stale). The active mirror target shows checked; picking
+    /// an item routes through <see cref="OnTargetActivated"/>, the same path as a target-panel card click.</summary>
+    private void PopulateTargetSubmenu()
+    {
+        _ctxTarget.DropDownItems.Clear();
+
+        IReadOnlyList<WindowInfo> targets;
+        try
+        {
+            targets = TargetListBuilder.Filter(WindowEnumerator.GetCloneableWindows(), null);
+        }
+        catch
+        {
+            targets = Array.Empty<WindowInfo>(); // enumeration failed — degrade to the empty placeholder
+        }
+
+        if (targets.Count == 0)
+        {
+            _ctxTarget.DropDownItems.Add(new ToolStripMenuItem(_loc.Get(LocKeys.Menu_Placeholder_NoTargets)) { Enabled = false });
+            return;
+        }
+
+        foreach (WindowInfo target in targets)
+        {
+            var item = new ToolStripMenuItem(TargetCaption(target))
+            {
+                Checked = _mirror.HasMirror && _mirror.TargetHandle == target.Handle,
+            };
+            item.Click += (_, _) => OnTargetActivated(this, target);
+            _ctxTarget.DropDownItems.Add(item);
+        }
+    }
+
+    /// <summary>Menu-safe window title: capped for very long titles, ampersands escaped (WinForms mnemonics).</summary>
+    private static string TargetCaption(WindowInfo target)
+    {
+        string title = target.Title;
+        if (title.Length > CtxTitleMaxChars)
+            title = title[..(CtxTitleMaxChars - 1)] + "…";
+        return title.Replace("&", "&&");
     }
 
     private void BuildPanelHost()
@@ -630,7 +700,8 @@ public sealed class MainWindow : Form
     /// <summary>
     /// Single route for click-through — panel toggle, Ctrl+Alt+C, profile restore, tray and ESC all enter here.
     /// ON: requires a mirror and a live escape hotkey, turns forwarding off (mutually exclusive), and forces
-    /// overlay (UI-hidden) mode. OFF: also restores the UI — every escape path returns a fully usable window.
+    /// overlay (UI-hidden) mode. OFF: returns to the surface active at entry — an overlay stays an overlay
+    /// (only the transparency drops); full-UI restore is the caller's business (<see cref="RestoreUserInterface"/>).
     /// </summary>
     private void SetClickThrough(bool on)
     {
@@ -659,10 +730,13 @@ public sealed class MainWindow : Form
                 return;
             }
             _clickForward = false; // mutually exclusive
+            _overlayBeforeClickThrough = _uiHidden;
         }
 
         _clickThrough = on;
-        SetOverlayMode(on); // ON hides the UI, OFF restores it — includes ApplyVisualState + SyncPanels
+        // ON hides the UI; OFF re-runs the route even when the overlay stays — ApplyVisualState inside must
+        // strip WS_EX_TRANSPARENT either way.
+        SetOverlayMode(on || _overlayBeforeClickThrough);
     }
 
     private void OnClickThroughToggleRequested(object? sender, bool on) => SetClickThrough(on);
@@ -704,12 +778,12 @@ public sealed class MainWindow : Form
 
     /// <summary>The one way back to a fully USABLE window (grip menu / panel requests from overlay): click-through
     /// must fall first — restoring the UI alone would leave WS_EX_TRANSPARENT on the whole window, an interface
-    /// that shows but cannot be clicked. The click-through route itself restores the UI.</summary>
+    /// that shows but cannot be clicked. Dropping click-through keeps the overlay, so exit it separately.</summary>
     private void RestoreUserInterface()
     {
         if (_clickThrough)
             SetClickThrough(false);
-        else if (_uiHidden)
+        if (_uiHidden)
             SetOverlayMode(false);
     }
 
@@ -1011,8 +1085,8 @@ public sealed class MainWindow : Form
             if (_group.IsRunning)
                 StopGroupSwitch(); // no source left to cycle — stop the timer, keep the members
             if (_clickThrough)
-                SetClickThrough(false); // the route also restores the UI — no stranding on a transparent empty window
-            else if (_uiHidden)
+                SetClickThrough(false); // may keep the overlay — the exit below prevents an empty stranded overlay
+            if (_uiHidden)
                 SetOverlayMode(false);
         }
         else if (_uiHidden)
@@ -1021,6 +1095,32 @@ public sealed class MainWindow : Form
         }
         SyncPanels();
         Invalidate(_mirrorRect);
+    }
+
+    /// <summary>The mirrored source changed its own size. MirrorSurface has already re-letterboxed the thumbnail and
+    /// refreshed the click-forward map, so the frame follows the new aspect: the overlay window re-fits, a normal-mode
+    /// size preset re-applies. Free-size normal needs only the repaint — the in-place letterbox already moved. Locked /
+    /// maximized keep their fixed frame (both reshape paths self-guard); the corrected aspect still shows inside it.</summary>
+    private void OnSourceResized(object? sender, EventArgs e)
+    {
+        if (_mirror.HasMirror && WindowState == FormWindowState.Normal)
+        {
+            if (_uiHidden)
+                RefitOverlay();
+            else if (_sizeMode is ClientSizeMode mode)
+                ApplyMirrorSizeMode(mode);
+        }
+        Invalidate(_mirrorRect);
+    }
+
+    /// <summary>Degraded flip: onto the ghost the canvas swaps to the restore-the-window hint (repaint only — the
+    /// frame keeps its shape); back to a live surface the frame reshapes like a source resize.</summary>
+    private void OnMirrorDegradedChanged(object? sender, EventArgs e)
+    {
+        if (_mirror.SourceDegraded)
+            Invalidate(_mirrorRect);
+        else
+            OnSourceResized(sender, e);
     }
 
     /// <summary>Reflects the mirror + window-control state into the live panels (selection/stop button in targets,
@@ -1465,8 +1565,8 @@ public sealed class MainWindow : Form
     private void RestoreFromTray()
     {
         if (_clickThrough)
-            SetClickThrough(false);
-        else if (_uiHidden)
+            SetClickThrough(false); // keeps the overlay when entered from one — the next line finishes the restore
+        if (_uiHidden)
             SetOverlayMode(false);
         if (!Visible)
             Show();
@@ -1676,6 +1776,12 @@ public sealed class MainWindow : Form
         _settingsPanel.ReflectSettings(_manager.Current);
     }
 
+    private void OnSettingsCheckUpdatesToggled(object? sender, bool on)
+    {
+        _manager.SetCheckUpdateOnStart(on);
+        _settingsPanel.ReflectSettings(_manager.Current);
+    }
+
     // ── Layout ───────────────────────────────────────────────────────────
 
     protected override void OnLayout(LayoutEventArgs levent)
@@ -1808,16 +1914,22 @@ public sealed class MainWindow : Form
         // Context-menu labels reuse the panel vocabulary (same localization keys).
         _ctxRestoreUi.Text = _loc.Get(LocKeys.Menu_RestoreUi);
         _ctxTarget.Text = _loc.Get(LocKeys.Menu_Target);
-        _ctxStop.Text = _loc.Get(LocKeys.Main_StopMirror);
         _ctxRegion.Text = _loc.Get(LocKeys.Menu_Region_Select);
+        _ctxRegionSelect.Text = _loc.Get(LocKeys.Menu_Region_Select);
+        _ctxRegionClear.Text = _loc.Get(LocKeys.Menu_Region_Clear);
+        _ctxSize.Text = _loc.Get(LocKeys.Main_Display_Size);
+        _ctxSizePresets[0].Text = "100%";
+        _ctxSizePresets[1].Text = "50%";
+        _ctxSizePresets[2].Text = "25%";
+        _ctxSizePresets[3].Text = _loc.Get(LocKeys.Menu_Size_Fullscreen);
+        _ctxOpacity.Text = _loc.Get(LocKeys.Main_Opacity);
+        _ctxBehavior.Text = _loc.Get(LocKeys.Main_Nav_Behavior);
         _ctxForward.Text = _loc.Get(LocKeys.Menu_Mode_ClickForward);
         _ctxThrough.Text = _loc.Get(LocKeys.Menu_Mode_ClickThrough);
         _ctxLock.Text = _loc.Get(LocKeys.Menu_Mode_Lock);
+        _ctxBorder.Text = _loc.Get(LocKeys.Menu_Mode_Border);
         _ctxAot.Text = _loc.Get(LocKeys.Main_Display_AlwaysOnTop);
-        _ctxOpacity.Text = _loc.Get(LocKeys.Main_Opacity);
-        _ctxMinimize.Text = _loc.Get(LocKeys.Tray_MinimizeToTray);
         _ctxSettings.Text = _loc.Get(LocKeys.Menu_Settings);
-        _ctxExit.Text = _loc.Get(LocKeys.Tray_Exit);
 
         DoLayout();
     }
@@ -1850,6 +1962,13 @@ public sealed class MainWindow : Form
                 // Thin accent frame in the margin MirrorHostPhysical reserves (the thumbnail is inset to leave it visible).
                 using var pen = new Pen(Theme.Accent, OverlayBorderDip);
                 g.DrawRectangle(pen, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+            }
+            if (_mirror.SourceDegraded)
+            {
+                // The hidden thumbnail leaves a bare canvas — same restore-the-window hint as the normal-mode frame.
+                using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                using var br = new SolidBrush(Theme.TextMuted);
+                g.DrawString(_loc.Get(LocKeys.Main_Mirror_MinimizedHint), Theme.Body, br, ClientRectangle, sf);
             }
             return;
         }
@@ -1888,6 +2007,13 @@ public sealed class MainWindow : Form
             using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             using var br = new SolidBrush(Theme.TextMuted);
             g.DrawString(_loc.Format(LocKeys.Main_Mirror_Hint, PickWindowChord()), Theme.Body, br, _mirrorRect, sf);
+        }
+        else if (_mirror.SourceDegraded)
+        {
+            // The thumbnail is pushed invisible while DWM serves the iconic ghost — explain instead of a dead icon.
+            using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            using var br = new SolidBrush(Theme.TextMuted);
+            g.DrawString(_loc.Get(LocKeys.Main_Mirror_MinimizedHint), Theme.Body, br, _mirrorRect, sf);
         }
     }
 
@@ -1972,10 +2098,10 @@ public sealed class MainWindow : Form
         if (e.Button == MouseButtons.Left && TryForward(User32.WM_LBUTTONUP, e, IntPtr.Zero))
             return;
 
-        // Right click over a live mirror = context menu. During click-through the window receives no input, and an
-        // in-flight region select/drag takes priority; the idle canvas points at the targets panel instead.
+        // Right click over the canvas = context menu (idle too — its target submenu is how a mirror gets started).
+        // During click-through the window receives no input, and an in-flight region select/drag takes priority.
         if (e.Button == MouseButtons.Right
-            && _mirror.HasMirror && _mirrorRect.Contains(e.Location)
+            && _mirrorRect.Contains(e.Location)
             && !_clickThrough && !_regionSelecting && !_regionDragging)
         {
             _mirrorMenu.Show(this, e.Location);
@@ -2223,6 +2349,8 @@ public sealed class MainWindow : Form
         _manager.HotkeyRouted -= OnHotkeyRouted;
         _manager.SurfaceRequested -= OnSurfaceRequested;
         _mirror.Changed -= OnMirrorChanged;
+        _mirror.SourceResized -= OnSourceResized;
+        _mirror.DegradedChanged -= OnMirrorDegradedChanged;
         _targetsPanel.TargetActivated -= OnTargetActivated;
         _targetsPanel.StopRequested -= OnStopRequested;
         _displayPanel.OpacityChangeRequested -= OnOpacityChangeRequested;
@@ -2249,6 +2377,7 @@ public sealed class MainWindow : Form
         _settingsPanel.LanguageSelected -= OnSettingsLanguageSelected;
         _settingsPanel.StartWithWindowsToggled -= OnSettingsStartWithWindowsToggled;
         _settingsPanel.MinimizeToTrayToggled -= OnSettingsMinimizeToTrayToggled;
+        _settingsPanel.CheckUpdatesToggled -= OnSettingsCheckUpdatesToggled;
         _aboutPanel.LinkActivated -= OnAboutLinkActivated;
         _groupTimer.Tick -= OnGroupTick;
         _groupTimer.Stop();

@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Chưa có vùng đã lưu)",
   "menu.placeholder.noProfiles": "(Chưa có hồ sơ đã lưu)",
+  "menu.placeholder.noTargets": "(Không có cửa sổ khả dụng)",
 
   "common.ok": "OK",
   "common.cancel": "Hủy",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo vẫn đang chạy trong khay",
   "tray.residentNotice.body": "Đóng cửa sổ không làm thoát ứng dụng. Dùng biểu tượng khay để khôi phục hoặc thoát.",
 
+  "update.dialog.caption": "Có bản cập nhật",
+  "update.dialog.body": "Phiên bản mới {0} đã ra mắt. Mở trang tải xuống?",
+
   "settings.section.language": "Ngôn ngữ",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Khởi động / Khay",
+  "settings.checkUpdates": "Kiểm tra cập nhật khi khởi động",
 
   "main.searchPlaceholder": "Tìm tiến trình",
   "main.statusRunning": "Đang chạy",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Hồ sơ",
   "main.stopMirror": "Dừng phản chiếu",
   "main.mirror.hint": "Chọn một cửa sổ để phản chiếu từ bảng [Mục tiêu] ({0})",
+  "main.mirror.minimizedHint": "Cửa sổ đích đã thu nhỏ và ứng dụng ngừng tạo khung hình. Khôi phục cửa sổ để tiếp tục phản chiếu.",
 
   "main.region.subtitle": "Nhấn Chọn vùng, rồi kéo trên bản phản chiếu để chỉ hiện phần đó. (ESC để hủy)",
   "main.region.current": "Vùng hiện tại",

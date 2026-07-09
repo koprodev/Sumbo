@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Καμία αποθηκευμένη περιοχή)",
   "menu.placeholder.noProfiles": "(Καμία αποθηκευμένη διαμόρφωση)",
+  "menu.placeholder.noTargets": "(Δεν υπάρχουν διαθέσιμα παράθυρα)",
 
   "common.ok": "OK",
   "common.cancel": "Άκυρο",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Το Sumbo εκτελείται ακόμη στη γραμμή εργασιών",
   "tray.residentNotice.body": "Το κλείσιμο του παραθύρου δεν κλείνει την εφαρμογή. Χρησιμοποιήστε το εικονίδιο της γραμμής εργασιών για επαναφορά ή έξοδο.",
 
+  "update.dialog.caption": "Διαθέσιμη ενημέρωση",
+  "update.dialog.body": "Κυκλοφόρησε η νέα έκδοση {0}. Άνοιγμα σελίδας λήψης;",
+
   "settings.section.language": "Γλώσσα",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Εκκίνηση / Γραμμή εργασιών",
+  "settings.checkUpdates": "Έλεγχος ενημερώσεων κατά την εκκίνηση",
 
   "main.searchPlaceholder": "Αναζήτηση διεργασιών",
   "main.statusRunning": "Σε εκτέλεση",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Προφίλ",
   "main.stopMirror": "Διακοπή κατοπτρισμού",
   "main.mirror.hint": "Επιλέξτε ένα παράθυρο προς κατοπτρισμό από τον πίνακα [Προορισμοί] ({0})",
+  "main.mirror.minimizedHint": "Το παράθυρο-στόχος είναι ελαχιστοποιημένο και η εφαρμογή σταμάτησε να παράγει εικόνα. Επαναφέρετε το παράθυρο για να συνεχιστεί ο καθρέφτης.",
 
   "main.region.subtitle": "Πατήστε Επιλογή περιοχής και μετά σύρετε πάνω στο κάτοπτρο για να εμφανίσετε μόνο εκείνο το τμήμα. (ESC για ακύρωση)",
   "main.region.current": "Τρέχουσα περιοχή",

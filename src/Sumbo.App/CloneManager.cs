@@ -137,6 +137,13 @@ public sealed class CloneManager : IDisposable
         _settingsService.Save(_settings);
     }
 
+    /// <summary>Toggles the startup update check and persists it (takes effect from the next launch).</summary>
+    public void SetCheckUpdateOnStart(bool on)
+    {
+        _settings = _settings with { CheckUpdateOnStart = on };
+        _settingsService.Save(_settings);
+    }
+
     /// <summary>
     /// Switches the UI language at runtime and persists it. Long-lived surfaces (tray, main window
     /// → panel fan-out) re-label themselves off <see cref="LocalizationCatalog.LanguageChanged"/>.

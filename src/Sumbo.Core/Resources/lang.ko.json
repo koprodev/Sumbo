@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(저장된 영역 없음)",
   "menu.placeholder.noProfiles": "(저장된 프로파일 없음)",
+  "menu.placeholder.noTargets": "(미러링 가능한 창 없음)",
 
   "common.ok": "확인",
   "common.cancel": "취소",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "숨보가 트레이에서 실행 중입니다",
   "tray.residentNotice.body": "창을 닫아도 종료되지 않습니다. 트레이 아이콘에서 복원하거나 종료할 수 있습니다.",
 
+  "update.dialog.caption": "업데이트 확인",
+  "update.dialog.body": "새 버전 {0} 출시 — 다운로드 페이지를 열까요?",
+
   "settings.section.language": "언어",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "시작 / 트레이",
+  "settings.checkUpdates": "시작 시 업데이트 확인",
 
   "main.searchPlaceholder": "프로세스 검색",
   "main.statusRunning": "실행 중",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "프로필",
   "main.stopMirror": "미러링 중지",
   "main.mirror.hint": "우측 [대상 창] 메뉴에서 미러링할 창을 선택하세요 ({0})",
+  "main.mirror.minimizedHint": "대상 창이 최소화되어 원본 앱이 화면 생성을 중단했습니다. 창을 복원하면 미러가 다시 표시됩니다.",
 
   "main.region.subtitle": "영역 선택을 누른 뒤 미러 화면 위에서 드래그하면 해당 부분만 표시됩니다. (ESC 취소)",
   "main.region.current": "현재 영역",

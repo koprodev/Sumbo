@@ -46,6 +46,19 @@ public struct POINT
     }
 }
 
+/// <summary>Win32 WINDOWPLACEMENT — <see cref="NormalPosition"/> keeps the restored rect while minimized/maximized.
+/// <see cref="Length"/> must be set to the struct size before the GetWindowPlacement call.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct WINDOWPLACEMENT
+{
+    public int Length;
+    public int Flags;
+    public int ShowCmd;
+    public POINT MinPosition;
+    public POINT MaxPosition;
+    public RECT NormalPosition;
+}
+
 /// <summary>dwFlags values for <see cref="DWM_THUMBNAIL_PROPERTIES"/> (DWM_TNP_*).</summary>
 [Flags]
 public enum DwmThumbnailFlags : uint

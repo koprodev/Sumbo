@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Nessuna area salvata)",
   "menu.placeholder.noProfiles": "(Nessun profilo salvato)",
+  "menu.placeholder.noTargets": "(Nessuna finestra disponibile)",
 
   "common.ok": "OK",
   "common.cancel": "Annulla",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo è ancora in esecuzione nella barra",
   "tray.residentNotice.body": "Chiudere la finestra non chiude l'app. Usa l'icona nella barra per ripristinarla o uscire.",
 
+  "update.dialog.caption": "Aggiornamento disponibile",
+  "update.dialog.body": "Nuova versione {0} disponibile. Aprire la pagina di download?",
+
   "settings.section.language": "Lingua",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Avvio / Barra",
+  "settings.checkUpdates": "Controlla aggiornamenti all'avvio",
 
   "main.searchPlaceholder": "Cerca processi",
   "main.statusRunning": "In esecuzione",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profili",
   "main.stopMirror": "Ferma mirroring",
   "main.mirror.hint": "Scegli una finestra da rispecchiare dal pannello [Target] ({0})",
+  "main.mirror.minimizedHint": "La finestra di destinazione è ridotta a icona e l'app ha smesso di generare l'immagine. Ripristina la finestra per riprendere il mirror.",
 
   "main.region.subtitle": "Fai clic su Seleziona area, poi trascina sul mirror per mostrare solo quella parte. (ESC per annullare)",
   "main.region.current": "Area corrente",

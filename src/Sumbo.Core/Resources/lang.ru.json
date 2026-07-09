@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Нет сохранённых областей)",
   "menu.placeholder.noProfiles": "(Нет сохранённых профилей)",
+  "menu.placeholder.noTargets": "(Нет доступных окон)",
 
   "common.ok": "ОК",
   "common.cancel": "Отмена",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo продолжает работать в трее",
   "tray.residentNotice.body": "Закрытие окна не завершает приложение. Используйте значок в трее, чтобы восстановить или выйти.",
 
+  "update.dialog.caption": "Доступно обновление",
+  "update.dialog.body": "Вышла новая версия {0}. Открыть страницу загрузки?",
+
   "settings.section.language": "Язык",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Запуск / Трей",
+  "settings.checkUpdates": "Проверять обновления при запуске",
 
   "main.searchPlaceholder": "Поиск процессов",
   "main.statusRunning": "Работает",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Профили",
   "main.stopMirror": "Остановить зеркалирование",
   "main.mirror.hint": "Выберите окно для зеркалирования на панели [Цели] ({0})",
+  "main.mirror.minimizedHint": "Целевое окно свёрнуто, и приложение перестало формировать изображение. Разверните окно, чтобы возобновить зеркало.",
 
   "main.region.subtitle": "Нажмите «Выбрать область», затем растяните рамку по зеркалу, чтобы показать только эту часть. (ESC — отмена)",
   "main.region.current": "Текущая область",

@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Tidak ada area tersimpan)",
   "menu.placeholder.noProfiles": "(Tidak ada profil tersimpan)",
+  "menu.placeholder.noTargets": "(Tidak ada jendela tersedia)",
 
   "common.ok": "OK",
   "common.cancel": "Batal",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo masih berjalan di tray",
   "tray.residentNotice.body": "Menutup jendela tidak keluar dari aplikasi. Gunakan ikon tray untuk memulihkan atau keluar.",
 
+  "update.dialog.caption": "Pembaruan tersedia",
+  "update.dialog.body": "Versi baru {0} telah dirilis. Buka halaman unduhan?",
+
   "settings.section.language": "Bahasa",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Startup / Tray",
+  "settings.checkUpdates": "Periksa pembaruan saat mulai",
 
   "main.searchPlaceholder": "Cari proses",
   "main.statusRunning": "Berjalan",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profil",
   "main.stopMirror": "Hentikan Pencerminan",
   "main.mirror.hint": "Pilih jendela untuk dicerminkan dari panel [Target] ({0})",
+  "main.mirror.minimizedHint": "Jendela target diminimalkan dan aplikasinya berhenti menghasilkan gambar. Pulihkan jendela untuk melanjutkan cermin.",
 
   "main.region.subtitle": "Klik Pilih Area, lalu seret di atas cermin untuk menampilkan hanya bagian itu. (ESC untuk membatalkan)",
   "main.region.current": "Area Saat Ini",

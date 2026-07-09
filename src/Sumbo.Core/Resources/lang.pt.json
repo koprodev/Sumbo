@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Nenhuma região salva)",
   "menu.placeholder.noProfiles": "(Nenhum perfil salvo)",
+  "menu.placeholder.noTargets": "(Nenhuma janela disponível)",
 
   "common.ok": "OK",
   "common.cancel": "Cancelar",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "O Sumbo continua em execução na bandeja",
   "tray.residentNotice.body": "Fechar a janela não encerra o aplicativo. Use o ícone da bandeja para restaurar ou sair.",
 
+  "update.dialog.caption": "Atualização disponível",
+  "update.dialog.body": "Nova versão {0} disponível. Abrir a página de download?",
+
   "settings.section.language": "Idioma",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Início / Bandeja",
+  "settings.checkUpdates": "Verificar atualizações ao iniciar",
 
   "main.searchPlaceholder": "Pesquisar processos",
   "main.statusRunning": "Em execução",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Perfis",
   "main.stopMirror": "Parar espelhamento",
   "main.mirror.hint": "Escolha uma janela para espelhar no painel [Alvos] ({0})",
+  "main.mirror.minimizedHint": "A janela de destino está minimizada e o aplicativo parou de gerar imagem. Restaure a janela para retomar o espelho.",
 
   "main.region.subtitle": "Clique em Selecionar região e arraste sobre o espelho para mostrar apenas aquela parte. (ESC para cancelar)",
   "main.region.current": "Região atual",

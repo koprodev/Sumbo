@@ -36,6 +36,9 @@ public sealed class SumboAppContext : ApplicationContext
 
         _tray = new TrayHost(_manager);
 
+        if (settings.CheckUpdateOnStart)
+            _ = NotifyOnNewerReleaseAsync(localization);
+
         if (_manager.HotkeyFailures.Count > 0)
         {
             string keys = string.Join(", ", _manager.HotkeyFailures.Select(f => f.Display));
@@ -45,6 +48,47 @@ public sealed class SumboAppContext : ApplicationContext
                 localization.Get(LocKeys.Dialog_HotkeyConflict_Caption),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
+        }
+    }
+
+    /// <summary>Startup update check (opt-out via settings): probes the latest GitHub release once after launch
+    /// settles and offers the download page when it is strictly newer. A Yes/No dialog rather than a tray
+    /// balloon — balloons render as toasts, which the system can suppress entirely (ToastEnabled=0).
+    /// Best-effort — failures stay silent.</summary>
+    private async System.Threading.Tasks.Task NotifyOnNewerReleaseAsync(LocalizationCatalog localization)
+    {
+        await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        (string Tag, string Url)? latest = await UpdateChecker.FetchLatestAsync().ConfigureAwait(false);
+        if (latest is null || !UpdateCheck.IsNewer(latest.Value.Tag, typeof(SumboAppContext).Assembly.GetName().Version))
+            return;
+
+        try
+        {
+            _main.BeginInvoke(() =>
+            {
+                if (_exiting)
+                    return;
+                DialogResult choice = MessageBox.Show(
+                    localization.Format(LocKeys.Update_Dialog_Body, latest.Value.Tag),
+                    localization.Get(LocKeys.Update_Dialog_Caption),
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+                if (choice == DialogResult.Yes)
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(latest.Value.Url) { UseShellExecute = true });
+                    }
+                    catch (Exception)
+                    {
+                        // no browser association / cancelled shell prompt — nothing actionable
+                    }
+                }
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // window torn down between the check and the marshal — exiting anyway
         }
     }
 

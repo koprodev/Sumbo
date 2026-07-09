@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Brak zapisanych obszarów)",
   "menu.placeholder.noProfiles": "(Brak zapisanych profili)",
+  "menu.placeholder.noTargets": "(Brak dostępnych okien)",
 
   "common.ok": "OK",
   "common.cancel": "Anuluj",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo nadal działa w zasobniku",
   "tray.residentNotice.body": "Zamknięcie okna nie kończy aplikacji. Użyj ikony w zasobniku, aby przywrócić lub zakończyć.",
 
+  "update.dialog.caption": "Dostępna aktualizacja",
+  "update.dialog.body": "Nowa wersja {0} jest dostępna. Otworzyć stronę pobierania?",
+
   "settings.section.language": "Język",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Uruchamianie / Zasobnik",
+  "settings.checkUpdates": "Sprawdzaj aktualizacje przy starcie",
 
   "main.searchPlaceholder": "Szukaj procesów",
   "main.statusRunning": "Działa",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profile",
   "main.stopMirror": "Zatrzymaj podgląd",
   "main.mirror.hint": "Wybierz okno do odzwierciedlenia z panelu [Cele] ({0})",
+  "main.mirror.minimizedHint": "Okno docelowe jest zminimalizowane, a aplikacja przestała generować obraz. Przywróć okno, aby wznowić lustro.",
 
   "main.region.subtitle": "Kliknij Wybierz obszar, a następnie przeciągnij po podglądzie, aby pokazać tylko tę część. (ESC anuluje)",
   "main.region.current": "Bieżący obszar",

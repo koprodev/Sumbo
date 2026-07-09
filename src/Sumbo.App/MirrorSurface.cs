@@ -28,13 +28,30 @@ internal sealed class MirrorSurface : IDisposable
     private byte _opacity = 255;     // normal-mode opacity — the DWM thumbnail opacity channel
     private bool _overlay;           // overlay mode: opacity moves to the host's Form.Opacity channel
     private string _targetTitle = string.Empty;
+    private IntPtr _sourceHook;              // WinEvent hook on the source thread — fires the re-fit on source resize
+    private User32.WinEventProc? _sourceHookProc; // kept alive: the native hook holds a raw pointer to this delegate
+    private SIZE _lastFitSource;             // source size at the last fit — resize detection diffs against this
 
     /// <summary>Raised after every start / stop / source-loss transition — the single chokepoint from which the
     /// host repaints the canvas and refreshes target labels.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>Raised (on the UI thread) when the mirrored source window changed its own size and the thumbnail
+    /// re-fit in place. The host reshapes the frame around the new aspect (overlay re-fit / size-preset re-apply).
+    /// Distinct from <see cref="Changed"/>: the mirror stays on the same target — no lifecycle transition.</summary>
+    public event EventHandler? SourceResized;
+
+    /// <summary>Raised when <see cref="SourceDegraded"/> flips. The host swaps between the live thumbnail and a
+    /// restore-the-window hint on the canvas.</summary>
+    public event EventHandler? DegradedChanged;
+
     public bool HasMirror => _session is not null;
     public string TargetTitle => _targetTitle;
+
+    /// <summary>True while DWM serves a small iconic ghost (app icon on a gradient) instead of the source's live
+    /// surface — long-minimized Chromium windows do this once the browser's occlusion pause lets the surface be
+    /// reclaimed. The thumbnail is hidden meanwhile; only restoring the source window brings frames back.</summary>
+    public bool SourceDegraded { get; private set; }
 
     /// <summary>The mirrored source window, <see cref="IntPtr.Zero"/> when idle — used to guard re-selecting the
     /// already-mirrored target (avoids a re-register flicker).</summary>
@@ -77,7 +94,7 @@ internal sealed class MirrorSurface : IDisposable
     {
         width = 0;
         height = 0;
-        if (_session is null)
+        if (_session is null || SourceDegraded) // ghost size (~200px) must not drive size presets / overlay fits
             return false;
 
         SIZE source;
@@ -162,7 +179,7 @@ internal sealed class MirrorSurface : IDisposable
     public bool TryForwardMouse(uint msg, int physX, int physY, IntPtr wParam, bool wheel, out bool posted)
     {
         posted = false;
-        if (_session is null)
+        if (_session is null || SourceDegraded) // the coordinate map is ghost-based while degraded
             return false;
 
         (int X, int Y)? mapped = CoordinateMapper.MapDestToSource(physX, physY, _lastDestRect, _lastActiveSource);
@@ -174,7 +191,7 @@ internal sealed class MirrorSurface : IDisposable
     }
 
     /// <summary>
-    /// Posts <paramref name="msg"/> to the deepest real child under the mapped point.
+    /// Posts <paramref name="msg"/> to the deepest input-capable child under the mapped point.
     /// The point is in <b>source-window</b> coordinates (<c>fSourceClientAreaOnly=false</c> shows the full window),
     /// so it is converted to screen via <see cref="User32.GetWindowRect"/> before descending. Mouse messages carry
     /// client coords in lParam; WM_MOUSEWHEEL carries screen coords.
@@ -186,15 +203,16 @@ internal sealed class MirrorSurface : IDisposable
 
         var screen = new POINT(wr.Left + srcWindowX, wr.Top + srcWindowY);
 
-        // Descend from the top-level source into the deepest real child containing the screen point.
-        // RealChildWindowFromPoint expects parent-client coords, recomputed via ScreenToClient each level.
+        // Descend from the top-level source into the deepest input-capable child containing the screen point.
+        // Manual z-order hit-test instead of ChildWindowFromPointEx/RealChildWindowFromPoint: the OS hit-tests
+        // clip to the parent's client rect — a 160x28 stub for MINIMIZED sources whose children keep restored
+        // offsets — and the "Real" variant returns disabled render-only overlays that swallow the click
+        // (Chromium's "Intermediate D3D Window"). Screen-space rects stay affine-consistent even at -32000.
         IntPtr target = _session.Source;
         for (int depth = 0; depth < 16; depth++)
         {
-            POINT clientPt = screen;
-            User32.ScreenToClient(target, ref clientPt);
-            IntPtr child = User32.RealChildWindowFromPoint(target, clientPt);
-            if (child == IntPtr.Zero || child == target)
+            IntPtr child = TopChildAt(target, screen);
+            if (child == IntPtr.Zero)
                 break;
             target = child;
         }
@@ -204,6 +222,21 @@ internal sealed class MirrorSurface : IDisposable
             User32.ScreenToClient(target, ref lp);
 
         return User32.PostMessage(target, msg, wParam, MakeLParam(lp.X, lp.Y));
+    }
+
+    /// <summary>Top-most visible+enabled direct child containing the screen point; zero when none. Disabled
+    /// children are render-only surfaces here — forwarding into them drops the input.</summary>
+    private static IntPtr TopChildAt(IntPtr parent, POINT screen)
+    {
+        for (IntPtr c = User32.GetWindow(parent, User32.GW_CHILD); c != IntPtr.Zero; c = User32.GetWindow(c, User32.GW_HWNDNEXT))
+        {
+            if (!User32.IsWindowVisible(c) || !User32.IsWindowEnabled(c))
+                continue;
+            if (User32.GetWindowRect(c, out RECT r)
+                && screen.X >= r.Left && screen.X < r.Right && screen.Y >= r.Top && screen.Y < r.Bottom)
+                return c;
+        }
+        return IntPtr.Zero;
     }
 
     private static IntPtr MakeLParam(int low, int high)
@@ -252,6 +285,8 @@ internal sealed class MirrorSurface : IDisposable
         _targetTitle = target.Title;
         TargetHandle = target.Handle;
         _region = null; // a fresh target starts unclipped
+        SourceDegraded = false; // re-evaluated by the 1s poll against the new source
+        InstallSourceHook(session.Source);
         FitToHost();
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
@@ -301,6 +336,8 @@ internal sealed class MirrorSurface : IDisposable
         _targetTitle = target.Title;
         TargetHandle = target.Handle;
         // _region / _opacity intentionally preserved across the hop
+        SourceDegraded = false; // re-evaluated by the 1s poll against the new source
+        InstallSourceHook(session.Source); // re-scope the resize hook to the new source's thread
         FitToHost();
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
@@ -313,6 +350,7 @@ internal sealed class MirrorSurface : IDisposable
         if (_session is null)
             return;
 
+        RemoveSourceHook();
         _session.Dispose();
         _session = null;
         _targetTitle = string.Empty;
@@ -320,6 +358,8 @@ internal sealed class MirrorSurface : IDisposable
         _region = null;
         _lastDestRect = default;
         _lastActiveSource = default;
+        _lastFitSource = default;
+        SourceDegraded = false; // no DegradedChanged — Changed already repaints the (now idle) canvas
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -343,11 +383,33 @@ internal sealed class MirrorSurface : IDisposable
             SIZE src = _session.GetSourceSize();
             if (src.Cx <= 0 || src.Cy <= 0)
                 Stop();
+            else
+                UpdateDegraded(src);
         }
         catch
         {
             Stop();
         }
+    }
+
+    /// <summary>Degraded = minimized source whose DWM size collapsed far below its restored geometry — the iconic
+    /// ghost. Transition hides/reshows the thumbnail (FitToHost reads the flag) and notifies the host.</summary>
+    private void UpdateDegraded(SIZE src)
+    {
+        bool degraded = false;
+        if (_session is not null && User32.IsIconic(_session.Source))
+        {
+            var wp = new WINDOWPLACEMENT { Length = System.Runtime.InteropServices.Marshal.SizeOf<WINDOWPLACEMENT>() };
+            if (User32.GetWindowPlacement(_session.Source, ref wp)
+                && wp.NormalPosition.Width > 0 && wp.NormalPosition.Height > 0)
+                degraded = src.Cx < wp.NormalPosition.Width / 2 && src.Cy < wp.NormalPosition.Height / 2;
+        }
+
+        if (degraded == SourceDegraded)
+            return;
+        SourceDegraded = degraded;
+        FitToHost();
+        DegradedChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Aspect-fit the active source into the host rect and push the DWM destination. Source loss during the
@@ -362,6 +424,7 @@ internal sealed class MirrorSurface : IDisposable
             SIZE source = _session.GetSourceSize();
             if (source.Cx <= 0 || source.Cy <= 0)
                 return;
+            _lastFitSource = source; // resize detection baseline — the source size this fit was computed against
 
             RECT active = CoordinateMapper.ActiveSource(_region, source.Cx, source.Cy);
             (int left, int top, int right, int bottom) =
@@ -372,8 +435,9 @@ internal sealed class MirrorSurface : IDisposable
             // the flagged members, so dropping DWM_TNP_RECTSOURCE on a crop-clear would leave the prior crop's source
             // rect in place — the mirror would stay zoomed to the old region instead of returning to the full source.
             // Overlay pushes the thumbnail opaque (the host Form.Opacity carries the percent); normal mode uses the
-            // DWM byte. One saved percent (_opacity), two channels.
-            _session.UpdateDestination(dest, active, _overlay ? (byte)255 : _opacity);
+            // DWM byte. One saved percent (_opacity), two channels. Degraded pushes 0 — the iconic ghost must not
+            // paint over the host's restore-the-window hint.
+            _session.UpdateDestination(dest, active, SourceDegraded ? (byte)0 : (_overlay ? (byte)255 : _opacity));
 
             _lastDestRect = dest;
             _lastActiveSource = active;
@@ -384,9 +448,68 @@ internal sealed class MirrorSurface : IDisposable
         }
     }
 
+    /// <summary>Installs a WinEvent hook scoped to the source window's own UI thread so a source resize refits the
+    /// mirror without waiting on the 1s source-loss poll. Best-effort: a failed hook simply forgoes live resize
+    /// tracking (the mirror and the poll are unaffected). The delegate is retained in a field — the native hook
+    /// stores a raw pointer to it, so letting it be collected would crash the callback.</summary>
+    private void InstallSourceHook(IntPtr source)
+    {
+        RemoveSourceHook();
+        uint tid = User32.GetWindowThreadProcessId(source, out uint pid);
+        if (tid == 0)
+            return;
+        _sourceHookProc ??= OnSourceWinEvent;
+        _sourceHook = User32.SetWinEventHook(
+            User32.EVENT_OBJECT_LOCATIONCHANGE, User32.EVENT_OBJECT_LOCATIONCHANGE,
+            IntPtr.Zero, _sourceHookProc, pid, tid, User32.WINEVENT_OUTOFCONTEXT);
+    }
+
+    private void RemoveSourceHook()
+    {
+        if (_sourceHook != IntPtr.Zero)
+        {
+            User32.UnhookWinEvent(_sourceHook);
+            _sourceHook = IntPtr.Zero;
+        }
+    }
+
+    /// <summary>WinEvent callback (UI thread, out-of-context). A LOCATIONCHANGE on the source top-level window that
+    /// actually changed its size refits the thumbnail and notifies the host; pure moves (size unchanged) and
+    /// child-object events are ignored.</summary>
+    private void OnSourceWinEvent(IntPtr hook, uint ev, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
+    {
+        if (_session is null || hwnd != _session.Source
+            || idObject != User32.OBJID_WINDOW || idChild != User32.CHILDID_SELF)
+            return;
+
+        SIZE size;
+        try
+        {
+            size = _session.GetSourceSize();
+        }
+        catch
+        {
+            return; // source vanished mid-event — the 1s poll drives the teardown
+        }
+        if (size.Cx <= 0 || size.Cy <= 0)
+            return; // gone — the 1s poll drives the teardown
+
+        UpdateDegraded(size); // ghost swap / restore can announce itself as a size change — classify it first
+        if (SourceDegraded)
+            return; // the host shows the hint; don't reshape the frame around the ghost's aspect
+
+        if (size.Cx == _lastFitSource.Cx && size.Cy == _lastFitSource.Cy)
+            return; // a move with no size change (or a fit already applied by the degraded-clear transition)
+
+        FitToHost(); // re-letterbox + refresh the click-forward coordinate map (updates _lastFitSource)
+        if (_session is not null)
+            SourceResized?.Invoke(this, EventArgs.Empty); // host reshapes the frame around the new aspect
+    }
+
     public void Dispose()
     {
         // Teardown only — no Changed raise; the host is going away with us.
+        RemoveSourceHook();
         _session?.Dispose();
         _session = null;
     }

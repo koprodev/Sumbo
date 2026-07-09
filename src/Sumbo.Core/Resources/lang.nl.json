@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Geen opgeslagen gebieden)",
   "menu.placeholder.noProfiles": "(Geen opgeslagen profielen)",
+  "menu.placeholder.noTargets": "(Geen vensters beschikbaar)",
 
   "common.ok": "OK",
   "common.cancel": "Annuleren",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo draait nog in het systeemvak",
   "tray.residentNotice.body": "Het venster sluiten sluit de app niet af. Gebruik het systeemvakpictogram om te herstellen of af te sluiten.",
 
+  "update.dialog.caption": "Update beschikbaar",
+  "update.dialog.body": "Nieuwe versie {0} is uit. Downloadpagina openen?",
+
   "settings.section.language": "Taal",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Opstarten / systeemvak",
+  "settings.checkUpdates": "Controleren op updates bij het starten",
 
   "main.searchPlaceholder": "Processen zoeken",
   "main.statusRunning": "Actief",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profielen",
   "main.stopMirror": "Spiegelen stoppen",
   "main.mirror.hint": "Kies een venster om te spiegelen in het paneel [Doelen] ({0})",
+  "main.mirror.minimizedHint": "Het doelvenster is geminimaliseerd en de app produceert geen beeld meer. Herstel het venster om de spiegel te hervatten.",
 
   "main.region.subtitle": "Klik op Gebied selecteren en sleep vervolgens over de spiegel om alleen dat deel te tonen. (ESC om te annuleren)",
   "main.region.current": "Huidig gebied",

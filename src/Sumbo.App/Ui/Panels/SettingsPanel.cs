@@ -24,6 +24,7 @@ internal sealed class SettingsPanel : PanelView
     private readonly IReadOnlyList<string> _codes = LocalizationCatalog.AvailableLanguages;
     private readonly ModeRow _rowStartWithWindows = new();
     private readonly ModeRow _rowMinimizeToTray = new();
+    private readonly ModeRow _rowCheckUpdates = new();
 
     private bool _syncing; // guards handlers while ReflectSettings seeds the controls
 
@@ -36,6 +37,9 @@ internal sealed class SettingsPanel : PanelView
 
     /// <summary>Minimize-to-tray toggle. Shell route: <see cref="CloneManager.SetMinimizeToTray"/> + reflect.</summary>
     public event EventHandler<bool>? MinimizeToTrayToggled;
+
+    /// <summary>Startup update-check toggle. Shell route: <see cref="CloneManager.SetCheckUpdateOnStart"/> + reflect.</summary>
+    public event EventHandler<bool>? CheckUpdatesToggled;
 
     public SettingsPanel()
     {
@@ -65,6 +69,11 @@ internal sealed class SettingsPanel : PanelView
             if (_syncing) return;
             MinimizeToTrayToggled?.Invoke(this, _rowMinimizeToTray.Toggle.Checked);
         };
+        _rowCheckUpdates.Toggle.CheckedChanged += (_, _) =>
+        {
+            if (_syncing) return;
+            CheckUpdatesToggled?.Invoke(this, _rowCheckUpdates.Toggle.Checked);
+        };
 
         Controls.Add(_sub);
         Controls.Add(_langLabel);
@@ -72,6 +81,7 @@ internal sealed class SettingsPanel : PanelView
         Controls.Add(_startupLabel);
         Controls.Add(_rowStartWithWindows);
         Controls.Add(_rowMinimizeToTray);
+        Controls.Add(_rowCheckUpdates);
     }
 
     /// <summary>Shell → panel: seeds the controls from the current <see cref="Settings"/> under the reentry guard
@@ -84,6 +94,7 @@ internal sealed class SettingsPanel : PanelView
             _langDrop.SelectedIndex = Math.Max(0, IndexOfCode(LocalizationCatalog.Normalize(settings.Language)));
             _rowStartWithWindows.Toggle.Checked = settings.StartWithWindows;
             _rowMinimizeToTray.Toggle.Checked = settings.MinimizeToTray;
+            _rowCheckUpdates.Toggle.Checked = settings.CheckUpdateOnStart;
         }
         finally
         {
@@ -102,6 +113,7 @@ internal sealed class SettingsPanel : PanelView
         _startupLabel.Text = loc.Get(LocKeys.Settings_Section_Startup);
         _rowStartWithWindows.SetText(loc.Get(LocKeys.Tray_AutoStart), string.Empty);
         _rowMinimizeToTray.SetText(loc.Get(LocKeys.Tray_MinimizeToTray), string.Empty);
+        _rowCheckUpdates.SetText(loc.Get(LocKeys.Settings_CheckUpdates), string.Empty);
     }
 
     private int IndexOfCode(string code)
@@ -132,5 +144,7 @@ internal sealed class SettingsPanel : PanelView
         _rowStartWithWindows.SetBounds(x, y, cw, 44);
         y += 44 + 6;
         _rowMinimizeToTray.SetBounds(x, y, cw, 44);
+        y += 44 + 6;
+        _rowCheckUpdates.SetBounds(x, y, cw, 44);
     }
 }

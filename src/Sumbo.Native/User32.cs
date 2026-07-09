@@ -149,12 +149,26 @@ public static class User32
     [DllImport("user32.dll")]
     public static extern IntPtr WindowFromPoint(POINT point);
 
-    /// <summary>
-    /// Deepest *real* child under a point given in the parent's client coordinates
-    /// (skips transparent group boxes, unlike ChildWindowFromPoint).
-    /// </summary>
+    public const uint GW_HWNDNEXT = 2;
+    public const uint GW_CHILD = 5;
+
+    /// <summary>Z-order walk (GW_CHILD = top child, GW_HWNDNEXT = next below) — input hit-testing that must work
+    /// on minimized parents, whose client rect is a 160x28 stub while children keep restored offsets.</summary>
     [DllImport("user32.dll")]
-    public static extern IntPtr RealChildWindowFromPoint(IntPtr hwndParent, POINT ptParentClientCoords);
+    public static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsWindowEnabled(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsIconic(IntPtr hWnd);
+
+    /// <summary>Restored-geometry source while the window is minimized (its live rect is a -32000 stub).</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT placement);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -181,4 +195,31 @@ public static class User32
     /// <summary>Window class name — part of the durable target identity used for profile matching.</summary>
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    // ── WinEvent hooks (source-window resize tracking) ───────────────────
+    /// <summary>WINEVENT_OUTOFCONTEXT — events are posted to the installing thread's queue; no DLL injection.</summary>
+    public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+
+    /// <summary>EVENT_OBJECT_LOCATIONCHANGE — an object (here the source top-level window) moved or resized.</summary>
+    public const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+
+    /// <summary>OBJID_WINDOW / CHILDID_SELF — the window itself, filtering out child-accessible-object events.</summary>
+    public const int OBJID_WINDOW = 0;
+    public const int CHILDID_SELF = 0;
+
+    /// <summary>WinEvent callback. For WINEVENT_OUTOFCONTEXT it runs on the thread that installed the hook.</summary>
+    public delegate void WinEventProc(
+        IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
+        int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+
+    /// <summary>Installs an out-of-context WinEvent hook. Scope it to a single process/thread (0 = all) to keep the
+    /// event traffic minimal. Returns IntPtr.Zero on failure.</summary>
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SetWinEventHook(
+        uint eventMin, uint eventMax, IntPtr hmodWinEventProc,
+        WinEventProc lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 }

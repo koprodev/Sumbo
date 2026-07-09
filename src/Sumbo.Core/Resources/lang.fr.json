@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Aucune zone enregistrée)",
   "menu.placeholder.noProfiles": "(Aucun profil enregistré)",
+  "menu.placeholder.noTargets": "(Aucune fenêtre disponible)",
 
   "common.ok": "OK",
   "common.cancel": "Annuler",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo est toujours actif dans la zone de notification",
   "tray.residentNotice.body": "Fermer la fenêtre ne quitte pas l'application. Utilisez l'icône de la zone de notification pour la restaurer ou la quitter.",
 
+  "update.dialog.caption": "Mise à jour disponible",
+  "update.dialog.body": "Nouvelle version {0} disponible. Ouvrir la page de téléchargement ?",
+
   "settings.section.language": "Langue",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Démarrage / Zone de notification",
+  "settings.checkUpdates": "Vérifier les mises à jour au démarrage",
 
   "main.searchPlaceholder": "Rechercher des processus",
   "main.statusRunning": "En cours",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profils",
   "main.stopMirror": "Arrêter la mise en miroir",
   "main.mirror.hint": "Choisissez une fenêtre à mettre en miroir dans le panneau [Cibles] ({0})",
+  "main.mirror.minimizedHint": "La fenêtre cible est réduite et son application ne produit plus d'image. Restaurez la fenêtre pour reprendre le miroir.",
 
   "main.region.subtitle": "Cliquez sur Sélectionner une zone, puis faites glisser sur le miroir pour n'afficher que cette partie. (ÉCHAP pour annuler)",
   "main.region.current": "Zone actuelle",

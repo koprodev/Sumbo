@@ -52,6 +52,11 @@ public static class LocKeys
     // ── Disabled placeholder menu items ──
     public const string Menu_Placeholder_NoRegions = "menu.placeholder.noRegions";
     public const string Menu_Placeholder_NoProfiles = "menu.placeholder.noProfiles";
+    public const string Menu_Placeholder_NoTargets = "menu.placeholder.noTargets";
+
+    public const string Settings_CheckUpdates = "settings.checkUpdates";      // startup update-check toggle
+    public const string Update_Dialog_Caption = "update.dialog.caption";
+    public const string Update_Dialog_Body = "update.dialog.body";            // {0} = release tag (e.g. v1.3.0)
 
     // ── Common buttons ──
     public const string Common_Ok = "common.ok";
@@ -149,6 +154,7 @@ public static class LocKeys
     public const string Main_Nav_Profiles = "main.nav.profiles";   // rail profiles icon
     public const string Main_StopMirror = "main.stopMirror";       // stop-mirroring button at the bottom of the targets panel
     public const string Main_Mirror_Hint = "main.mirror.hint";     // idle canvas hint ({0} = pick-window chord)
+    public const string Main_Mirror_MinimizedHint = "main.mirror.minimizedHint"; // degraded (iconic-ghost) source hint
 
     // ── Region / profiles panels ──
     public const string Main_Region_Subtitle = "main.region.subtitle";       // region panel guidance (drag usage)
@@ -193,7 +199,8 @@ public static class LocKeys
         Menu_Region_Clear, Menu_Region_Save, Menu_Region_Saved, Menu_Profile_Save,
         Menu_Profile_Load, Menu_Group_Add, Menu_Group_Clear,
         Menu_Group_Start, Menu_Group_Stop, Menu_Settings,
-        Menu_Placeholder_NoRegions, Menu_Placeholder_NoProfiles,
+        Menu_Placeholder_NoRegions, Menu_Placeholder_NoProfiles, Menu_Placeholder_NoTargets,
+        Settings_CheckUpdates, Update_Dialog_Caption, Update_Dialog_Body,
         Common_Ok, Common_Cancel,
         Prompt_RegionName_Title, Prompt_RegionName_Default, Prompt_ProfileName_Title,
         Prompt_ProfileName_Default, Prompt_GroupInterval_Title,
@@ -220,7 +227,7 @@ public static class LocKeys
         Main_Mode_ClickThrough_Desc, Main_Mode_Lock_Desc, Main_Mode_Border_Desc, Main_Mode_Aot_Desc,
         Main_Nav_Region, Main_Nav_Behavior,
         Main_Nav_Hotkeys, Main_Nav_Group, Main_Nav_Settings, Main_Nav_About,
-        Main_Nav_Targets, Main_Nav_Profiles, Main_StopMirror, Main_Mirror_Hint,
+        Main_Nav_Targets, Main_Nav_Profiles, Main_StopMirror, Main_Mirror_Hint, Main_Mirror_MinimizedHint,
         Main_Region_Subtitle, Main_Region_Current, Main_Profiles_Subtitle, Main_Item_Apply,
         Main_ConfirmDelete_Body, Main_ConfirmDelete_Caption,
         Main_Settings_Subtitle, Main_Group_Subtitle, Main_Group_Members, Main_Group_Empty,

@@ -6,9 +6,8 @@ namespace Sumbo.Core;
 /// Global application settings persisted to <c>settings.json</c> via <see cref="SettingsService"/>
 /// (<b>camelCase</b> names, <b>string</b> enums — existing stores depend on this wire format).
 /// <para>
-/// <see cref="CheckUpdateOnStart"/> and <see cref="Hotkeys"/> are <b>persisted only</b> — round-tripped so
-/// the schema stays stable, but not wired into behaviour (auto-update and hotkey re-binding are not
-/// implemented).
+/// <see cref="Hotkeys"/> is <b>persisted only</b> — round-tripped so the schema stays stable, but not wired
+/// into behaviour (hotkey re-binding is not implemented).
 /// </para>
 /// </summary>
 public sealed record Settings

@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Kayıtlı bölge yok)",
   "menu.placeholder.noProfiles": "(Kayıtlı profil yok)",
+  "menu.placeholder.noTargets": "(Kullanılabilir pencere yok)",
 
   "common.ok": "Tamam",
   "common.cancel": "İptal",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo hâlâ tepside çalışıyor",
   "tray.residentNotice.body": "Pencereyi kapatmak uygulamadan çıkmaz. Geri getirmek veya çıkmak için tepsi simgesini kullanın.",
 
+  "update.dialog.caption": "Güncelleme mevcut",
+  "update.dialog.body": "Yeni sürüm {0} yayımlandı. İndirme sayfası açılsın mı?",
+
   "settings.section.language": "Dil",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Başlangıç / Tepsi",
+  "settings.checkUpdates": "Başlangıçta güncellemeleri denetle",
 
   "main.searchPlaceholder": "Süreç ara",
   "main.statusRunning": "Çalışıyor",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profiller",
   "main.stopMirror": "Yansıtmayı Durdur",
   "main.mirror.hint": "Yansıtılacak pencereyi [Hedefler] panelinden seçin ({0})",
+  "main.mirror.minimizedHint": "Hedef pencere simge durumuna küçültüldü ve uygulama görüntü üretmeyi durdurdu. Aynayı sürdürmek için pencereyi geri yükleyin.",
 
   "main.region.subtitle": "Bölge Seç'e tıklayın, ardından yalnızca o kısmı göstermek için yansıma üzerinde sürükleyin. (İptal için ESC)",
   "main.region.current": "Geçerli Bölge",

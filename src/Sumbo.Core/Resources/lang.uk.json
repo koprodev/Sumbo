@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Немає збережених областей)",
   "menu.placeholder.noProfiles": "(Немає збережених профілів)",
+  "menu.placeholder.noTargets": "(Немає доступних вікон)",
 
   "common.ok": "OK",
   "common.cancel": "Скасувати",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo досі працює в треї",
   "tray.residentNotice.body": "Закриття вікна не завершує роботу застосунку. Скористайтеся значком у треї, щоб відновити або вийти.",
 
+  "update.dialog.caption": "Доступне оновлення",
+  "update.dialog.body": "Вийшла нова версія {0}. Відкрити сторінку завантаження?",
+
   "settings.section.language": "Мова",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Запуск / Трей",
+  "settings.checkUpdates": "Перевіряти оновлення під час запуску",
 
   "main.searchPlaceholder": "Пошук процесів",
   "main.statusRunning": "Працює",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Профілі",
   "main.stopMirror": "Зупинити віддзеркалення",
   "main.mirror.hint": "Виберіть вікно для віддзеркалення на панелі [Цілі] ({0})",
+  "main.mirror.minimizedHint": "Цільове вікно згорнуто, і застосунок припинив формувати зображення. Розгорніть вікно, щоб відновити дзеркало.",
 
   "main.region.subtitle": "Натисніть «Вибрати область», потім проведіть по дзеркалу, щоб показати лише цю частину. (ESC — скасувати)",
   "main.region.current": "Поточна область",

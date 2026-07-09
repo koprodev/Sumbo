@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(Keine gespeicherten Bereiche)",
   "menu.placeholder.noProfiles": "(Keine gespeicherten Profile)",
+  "menu.placeholder.noTargets": "(Keine Fenster verfügbar)",
 
   "common.ok": "OK",
   "common.cancel": "Abbrechen",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo läuft weiterhin im Infobereich",
   "tray.residentNotice.body": "Das Schließen des Fensters beendet die App nicht. Verwenden Sie das Infobereich-Symbol zum Wiederherstellen oder Beenden.",
 
+  "update.dialog.caption": "Update verfügbar",
+  "update.dialog.body": "Neue Version {0} ist verfügbar. Downloadseite öffnen?",
+
   "settings.section.language": "Sprache",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Start / Infobereich",
+  "settings.checkUpdates": "Beim Start nach Updates suchen",
 
   "main.searchPlaceholder": "Prozesse suchen",
   "main.statusRunning": "Läuft",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profile",
   "main.stopMirror": "Spiegelung stoppen",
   "main.mirror.hint": "Wählen Sie im Bereich [Ziele] ein Fenster zum Spiegeln aus ({0})",
+  "main.mirror.minimizedHint": "Das Zielfenster ist minimiert und die App erzeugt kein Bild mehr. Stellen Sie das Fenster wieder her, um den Spiegel fortzusetzen.",
 
   "main.region.subtitle": "Klicken Sie auf Bereich auswählen und ziehen Sie dann über den Spiegel, um nur diesen Teil anzuzeigen. (ESC zum Abbrechen)",
   "main.region.current": "Aktueller Bereich",

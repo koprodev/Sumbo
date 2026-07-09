@@ -34,6 +34,7 @@
 
   "menu.placeholder.noRegions": "(No saved regions)",
   "menu.placeholder.noProfiles": "(No saved profiles)",
+  "menu.placeholder.noTargets": "(No windows available)",
 
   "common.ok": "OK",
   "common.cancel": "Cancel",
@@ -74,6 +75,9 @@
   "tray.residentNotice.title": "Sumbo is still running in the tray",
   "tray.residentNotice.body": "Closing the window does not exit the app. Use the tray icon to restore or exit.",
 
+  "update.dialog.caption": "Update available",
+  "update.dialog.body": "New version {0} is out — open the download page?",
+
   "settings.section.language": "Language",
   "settings.language.ko": "한국어",
   "settings.language.en": "English",
@@ -94,6 +98,7 @@
   "settings.language.el": "Ελληνικά",
   "settings.language.fil": "Filipino",
   "settings.section.startup": "Startup / Tray",
+  "settings.checkUpdates": "Check for updates at startup",
 
   "main.searchPlaceholder": "Search processes",
   "main.statusRunning": "Running",
@@ -123,6 +128,7 @@
   "main.nav.profiles": "Profiles",
   "main.stopMirror": "Stop Mirroring",
   "main.mirror.hint": "Pick a window to mirror from the [Targets] panel ({0})",
+  "main.mirror.minimizedHint": "The target window is minimized and its app stopped producing frames. Restore the window to resume the mirror.",
 
   "main.region.subtitle": "Click Select Region, then drag over the mirror to show only that part. (ESC to cancel)",
   "main.region.current": "Current Region",
