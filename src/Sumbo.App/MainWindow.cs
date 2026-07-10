@@ -150,6 +150,8 @@ public sealed class MainWindow : Form
     private ToolStripMenuItem _ctxBorder = null!;
     private ToolStripMenuItem _ctxAot = null!;
     private ToolStripMenuItem _ctxSettings = null!;
+    private ToolStripMenuItem _ctxExit = null!;        // overlay only — unconditional app exit from the canvas menu
+    private ToolStripSeparator _ctxExitSep = null!;
 
     private static readonly int[] OpacityPresets = { 100, 75, 50, 25 };
     private const int SizePresetCount = 4;             // 100% / 50% / 25% / fullscreen — indices feed OnSizeModeSelected
@@ -326,6 +328,9 @@ public sealed class MainWindow : Form
 
         _ctxSettings = new ToolStripMenuItem();
         _ctxSettings.Click += (_, _) => SetActivePanel(PanelSettings);
+        _ctxExit = new ToolStripMenuItem();
+        _ctxExit.Click += (_, _) => CloseForExit(); // real quit — same single exit funnel as the tray Exit command
+        _ctxExitSep = new ToolStripSeparator();
 
         _mirrorMenu.Items.AddRange(new ToolStripItem[]
         {
@@ -335,6 +340,7 @@ public sealed class MainWindow : Form
             new ToolStripSeparator(),
             _ctxRestoreUi, _ctxRestoreSep,
             _ctxSettings,
+            _ctxExitSep, _ctxExit,
         });
 
         _mirrorMenu.Opening += (_, _) =>
@@ -342,6 +348,8 @@ public sealed class MainWindow : Form
             bool m = _mirror.HasMirror;
             _ctxRestoreUi.Visible = _uiHidden; // grip-menu entry — meaningless while the UI is already shown
             _ctxRestoreSep.Visible = _uiHidden;
+            _ctxExit.Visible = _uiHidden;      // overlay has no chrome in reach — offer a real exit here
+            _ctxExitSep.Visible = _uiHidden;
             _ctxRegion.Enabled = m;
             _ctxRegionSelect.Enabled = m && !_clickThrough; // during click-through the drag never reaches this window
             _ctxRegionClear.Enabled = m && _mirror.CurrentRegion is not null;
@@ -1930,6 +1938,7 @@ public sealed class MainWindow : Form
         _ctxBorder.Text = _loc.Get(LocKeys.Menu_Mode_Border);
         _ctxAot.Text = _loc.Get(LocKeys.Main_Display_AlwaysOnTop);
         _ctxSettings.Text = _loc.Get(LocKeys.Menu_Settings);
+        _ctxExit.Text = _loc.Get(LocKeys.Tray_Exit);
 
         DoLayout();
     }
@@ -2083,6 +2092,16 @@ public sealed class MainWindow : Form
             // Forwarding ON + left click over the mirror = post to the source (region selection above takes priority).
             if (TryForward(User32.WM_LBUTTONDOWN, e, new IntPtr(MK_LBUTTON)))
                 return;
+
+            // Overlay: a plain left-press on the canvas drags the window — there is no title strip to grab.
+            // Region selection and forwarding above own the press first; lock keeps the position fixed.
+            // Native HTCAPTION hand-off = the OS drag loop (snap/monitor rules) instead of manual move math.
+            if (_uiHidden && !_locked && WindowState == FormWindowState.Normal && _mirrorRect.Contains(e.Location))
+            {
+                User32.ReleaseCapture();
+                User32.SendMessage(Handle, User32.WM_NCLBUTTONDOWN, new IntPtr(User32.HTCAPTION), IntPtr.Zero);
+                return;
+            }
         }
         base.OnMouseDown(e);
     }

@@ -48,6 +48,7 @@ public static class User32
     public const int HTBOTTOM = 15;
     public const int HTBOTTOMLEFT = 16;
     public const int HTBOTTOMRIGHT = 17;
+    public const uint WM_NCLBUTTONDOWN = 0x00A1;
     public const uint WM_MOUSEMOVE = 0x0200;
     public const uint WM_LBUTTONDOWN = 0x0201;
     public const uint WM_LBUTTONUP = 0x0202;
@@ -133,6 +134,14 @@ public static class User32
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>Frees mouse capture before the WM_NCLBUTTONDOWN/HTCAPTION native drag hand-off.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ReleaseCapture();
 
     /// <summary>Registers (or returns) a system-wide message id for a string — identical across processes, so a second
     /// instance and the running one agree on the "surface yourself" signal.</summary>
